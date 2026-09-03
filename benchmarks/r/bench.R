@@ -85,9 +85,13 @@ timeit("03_plot_networks", {
 # prediction loop does identical work per customer, so both extrapolate.
 # Defaults reproduce the original script exactly.
 MAXIT_CAP <- as.integer(Sys.getenv("MAXIT_CAP", unset = "1000000"))
-# Which of the four fits to run, comma separated. Part 4 needs the star fit and
-# no other, so selecting only "star" still produces the prediction timings.
-FITS <- strsplit(Sys.getenv("FITS", unset = "null,degree,star,both"), ",")[[1]]
+# Which fits to run, comma separated. "degree" is available but excluded from
+# the default: b2degrange(25) does not estimate on this data -- ergm reports
+# "b2deg25+ not varying" and the fit runs indefinitely without completing an
+# MCMLE iteration. Pass FITS=degree to reproduce that.
+# Part 4 needs the star fit and no other, so FITS=star still produces the
+# prediction timings.
+FITS <- strsplit(Sys.getenv("FITS", unset = "null,star,both"), ",")[[1]]
 run_fit <- function(name) name %in% FITS
 CTRL <- function(maxit) control.ergm(MCMC.samplesize = 1250, MCMC.interval = 1000000,
                                      MCMLE.maxit = min(maxit, MAXIT_CAP), parallel = 4,
