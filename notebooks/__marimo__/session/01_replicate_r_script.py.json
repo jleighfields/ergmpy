@@ -1,0 +1,321 @@
+{
+  "version": "1",
+  "metadata": {
+    "marimo_version": "0.24.0",
+    "script_metadata_hash": null
+  },
+  "cells": [
+    {
+      "id": "Hbol",
+      "code_hash": "1e95054e6fc29b4cdd20f36645899e51",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "MJUe",
+      "code_hash": "f2e0cf2a04438eabc00cdf53579fca01",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h1 id=\"replicating-the-reference-r-script\">Replicating the reference R script</h1>\n<span class=\"paragraph\"><code>reference/Code_choice_set_6.R</code> fits a bipartite ERGM discrete choice\nmodel with the <code>ergm</code> package, then predicts held-out choices. This\nnotebook walks the same four parts in Python and explains what each one\nis doing.</span>\n<table>\n<thead>\n<tr>\n<th>R script part</th>\n<th>Here</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>1. Load data, build networks</td>\n<td>Choice sets and the sample space</td>\n</tr>\n<tr>\n<td>2. Network plots</td>\n<td>Skipped \u2014 the plots carry no result</td>\n</tr>\n<tr>\n<td>3. ERGM estimation</td>\n<td>Pseudo-likelihood, contrastive divergence, MCMLE</td>\n</tr>\n<tr>\n<td>4. Prediction</td>\n<td>Change statistics and top-N scoring</td>\n</tr>\n</tbody>\n</table>\n<span class=\"paragraph\">The model is from Sha et al. (2023), <em>Design Science</em> 9, e7. The data\nunder <code>reference/</code> is the authors', unmodified.</span></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "vblA",
+      "code_hash": "6d02d52d2eedacba801e5d8d1199afbb",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h2 id=\"part-1-what-the-data-is-and-what-the-constraint-does\">Part 1 \u2014 What the data is, and what the constraint does</h2>\n<span class=\"paragraph\">5,000 customers each consider 6 products and buy exactly 1.</span></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "bkHC",
+      "code_hash": "b0a99caef774e3197a47423912f277a9",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "lEQa",
+      "code_hash": "67aadd9cac8f5c8f79fbf4a678b7a9d1",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><ul>\n<li><strong>5,000 customers</strong>, each with a consideration set of\n  <strong>6</strong> products</li>\n<li><strong>281</strong> distinct products across all sets</li>\n<li>product degree \u2014 how many customers bought it \u2014 runs from\n  <strong>0</strong> to <strong>281</strong>, mean\n  <strong>17.8</strong></li>\n</ul></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "PKri",
+      "code_hash": "19daf2ddff5d9f1475cfeb65731514e5",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h3 id=\"the-two-options-that-define-the-sample-space\">The two options that define the sample space</h3>\n<span class=\"paragraph\">The R script passes these to <code>ergm</code>:</span>\n<div class=\"language-r codehilite\"><pre><span></span><code><span class=\"n\">constraints</span><span class=\"w\"> </span><span class=\"o\">=</span><span class=\"w\"> </span><span class=\"o\">~</span><span class=\"n\">b1degrees</span><span class=\"w\">          </span><span class=\"c1\"># every customer's degree is fixed</span>\n<span class=\"nf\">offset</span><span class=\"p\">(</span><span class=\"nf\">edgecov</span><span class=\"p\">(</span><span class=\"n\">mat_inv</span><span class=\"p\">)),</span><span class=\"w\"> </span><span class=\"o\">-</span><span class=\"kc\">Inf</span><span class=\"w\">    </span><span class=\"c1\"># no edge outside the consideration set</span>\n</code></pre></div>\n<span class=\"paragraph\">Together they say: each customer holds exactly one purchase, drawn from\ntheir own six alternatives. That is the entire sample space \u2014 6^5000\nconfigurations, not all bipartite graphs.</span>\n<span class=\"paragraph\">Two consequences follow, and both matter.</span>\n<span class=\"paragraph\"><strong><code>edges</code> cannot be estimated.</strong> The edge count is pinned at 5,000 in\nevery valid configuration, so the statistic never varies and its\ncoefficient is unidentified. R says so itself:</span>\n<blockquote>\n<span class=\"paragraph\">The following terms could not be estimated because they conflicted\nwith the sample space constraint: <code>edges</code></span>\n</blockquote>\n<span class=\"paragraph\">Most <code>b1*</code> terms go the same way \u2014 with every customer's degree fixed at\n1, any sum over customer attributes is constant too.</span>\n<span class=\"paragraph\"><strong>Sampling becomes cheap.</strong> A move is \"customer <em>i</em> buys <em>j</em> instead of\n<em>k</em>\", so a Gibbs sweep is one multinomial draw per customer rather than\na proposal over arbitrary tie toggles. That is where the speed comes\nfrom, not from Python.</span></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "Xref",
+      "code_hash": "dbdb3afc46dac50661986616926948bc",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h2 id=\"part-3-the-statistics-and-why-they-are-cheap-to-update\">Part 3 \u2014 The statistics, and why they are cheap to update</h2>\n<span class=\"paragraph\">Eight parameters are free: <code>b2cov.V1</code>\u2013<code>V3</code> (continuous product\nattributes), <code>b2factor.V4.2</code>\u2013<code>.5</code> (a categorical attribute, baseline\n<code>A</code>), and <code>b2star2</code>.</span>\n<span class=\"paragraph\"><code>b2star2</code> counts two-stars centred on products \u2014 pairs of customers who\nbought the same thing:</span>\n<marimo-tex class=\"arithmatex\">||[\\text{b2star2} = \\sum_j \\binom{d_j}{2}||]</marimo-tex><span class=\"paragraph\">where <marimo-tex class=\"arithmatex\">||(d_j||)</marimo-tex> is product <marimo-tex class=\"arithmatex\">||(j||)</marimo-tex>'s purchase count. This is the only term that\ncouples customers to one another, and it is what makes the model an\nERGM rather than a plain conditional logit.</span></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "SFPL",
+      "code_hash": "96cef8e6968f4f938d336a1c50c4530c",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "BYtC",
+      "code_hash": "1067b1dd6ba84c6cff35de7e8e7f710a",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><span class=\"paragraph\">The observed statistic vector, with <code>b2star2</code> recomputed by direct\nenumeration as an independent check:</span>\n<ul>\n<li>attribute sums: <code>[-3106.6 -3470.9 -2827.3   729.   2200.    752.    325. ]</code></li>\n<li><code>b2star2</code> from the package: <strong>299,387</strong></li>\n<li><code>b2star2</code> counted one product at a time: <strong>299,387</strong></li>\n</ul>\n<span class=\"paragraph\">Same number, computed two ways.</span></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "RGSE",
+      "code_hash": "e8309689417a7bfe6b287b99c60ff6bf",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h3 id=\"change-statistics\">Change statistics</h3>\n<span class=\"paragraph\">Moving one customer's purchase from <marimo-tex class=\"arithmatex\">||(k||)</marimo-tex> to <marimo-tex class=\"arithmatex\">||(j||)</marimo-tex> changes only two things,\nand both in closed form:</span>\n<table>\n<thead>\n<tr>\n<th>Statistic</th>\n<th>Change</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>attribute sums</td>\n<td><marimo-tex class=\"arithmatex\">||(x_j - x_k||)</marimo-tex></td>\n</tr>\n<tr>\n<td><code>b2star2</code></td>\n<td><marimo-tex class=\"arithmatex\">||(d_j - d_k + 1||)</marimo-tex></td>\n</tr>\n</tbody>\n</table>\n<span class=\"paragraph\">The second follows from <marimo-tex class=\"arithmatex\">||(\\binom{n+1}{2} - \\binom{n}{2} = n||)</marimo-tex> and\n<marimo-tex class=\"arithmatex\">||(\\binom{n-1}{2} - \\binom{n}{2} = -(n-1)||)</marimo-tex>.</span>\n<span class=\"paragraph\">This is the whole efficiency argument. The R script instead calls\n<code>summary(formula)</code> on the full 5,300-node network once per alternative\nper customer \u2014 25,000 complete recomputations \u2014 to obtain values that\ndiffer by one toggled edge.</span></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "Kclp",
+      "code_hash": "ffbca8a8cc99d01c47667c98f53c35f4",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h2 id=\"estimation-in-three-stages\">Estimation, in three stages</h2>\n<span class=\"paragraph\">Each stage exists because the one before it is not enough.</span></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "emfo",
+      "code_hash": "2bad3e166457afd054eedd3d02c56537",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "Hstk",
+      "code_hash": "efb78daadf186a65ef5dc803d7e946ef",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h3 id=\"1-pseudo-likelihood-71-ms\">1. Pseudo-likelihood \u2014 71 ms</h3>\n<span class=\"paragraph\">Conditioning on every other customer's purchase leaves customer <em>i</em>'s\nchoice multinomial over their own alternatives, so the pseudo-likelihood\nis a conditional logit and has a closed-form gradient and Hessian.</span>\n<span class=\"paragraph\">This is <strong>not</strong> what <code>ergm(estimate = \"MPLE\")</code> computes. <code>ergm</code> forms its\npseudo-likelihood dyad by dyad, discarding the one-purchase constraint,\nand on this model returns linear coefficients whose signs contradict its\nown MCMLE fit \u2014 see <code>results/r/mple_train.csv</code>.</span>\n<span class=\"paragraph\">It is fast and biased. <code>b2star2</code> comes out at\n<strong>0.01422</strong> against a true value near <strong>0.0058</strong> \u2014 about\n2.5\u00d7 too large, which matters in the next stage.</span></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "nWHF",
+      "code_hash": "38321e7092929ee84d4afa3cf5c69153",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h3 id=\"2-contrastive-divergence\">2. Contrastive divergence</h3>\n<span class=\"paragraph\">Starting MCMLE from the pseudo-likelihood estimate does not work. With\n<code>b2star2</code> inflated, the popularity term compounds: simulated networks\nreach a <code>b2star2</code> around 537,000 against an observed 299,000, roughly 69\nstandard deviations out, where importance sampling has no support and the\nstep diverges.</span>\n<span class=\"paragraph\">Contrastive divergence avoids that by never letting the chain leave the\ndata. Every draw restarts at the observed purchases and takes a short run\nof single-customer updates. The gradient is biased, so it is not an\nestimate to report \u2014 but it cannot run away, and it lands close enough to\nseed MCMLE.</span>\n<span class=\"paragraph\">The excursion length is the dial. Too short and the draws never leave the\nobserved configuration, so the gradient carries no signal; too long and it\napproaches MCMLE and inherits the instability it exists to avoid.</span></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "iLit",
+      "code_hash": "c0c76c3e43416afbefd537cf381ef627",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/html": "<div style='display: flex;flex: 1;flex-direction: column;justify-content: flex-start;align-items: normal;flex-wrap: nowrap;gap: 0.5rem'><span class=\"markdown prose dark:prose-invert contents\"><span class=\"paragraph\">Measured on the training data, recorded in <code>results/python/cd_excursion_sweep.log</code>. The pseudo-likelihood start sits at 1.19; ten sweeps per excursion reaches 0.026.</span></span><marimo-mime-renderer data-mime='&quot;application/vnd.vegalite.v6+json&quot;' data-data='&quot;{&#92;n  &#92;&quot;&#36;schema&#92;&quot;: &#92;&quot;https://vega.github.io/schema/vega-lite/v6.4.1.json&#92;&quot;,&#92;n  &#92;&quot;config&#92;&quot;: {&#92;n    &#92;&quot;view&#92;&quot;: {&#92;n      &#92;&quot;continuousHeight&#92;&quot;: 300,&#92;n      &#92;&quot;continuousWidth&#92;&quot;: 300&#92;n    }&#92;n  },&#92;n  &#92;&quot;data&#92;&quot;: {&#92;n    &#92;&quot;name&#92;&quot;: &#92;&quot;data-ff63cce3038f035372dc5436d37c476e&#92;&quot;&#92;n  },&#92;n  &#92;&quot;datasets&#92;&quot;: {&#92;n    &#92;&quot;data-ff63cce3038f035372dc5436d37c476e&#92;&quot;: [&#92;n      {&#92;n        &#92;&quot;distance&#92;&quot;: 1.0972,&#92;n        &#92;&quot;sweeps&#92;&quot;: 0.1,&#92;n        &#92;&quot;updates&#92;&quot;: 500&#92;n      },&#92;n      {&#92;n        &#92;&quot;distance&#92;&quot;: 0.9787,&#92;n        &#92;&quot;sweeps&#92;&quot;: 0.25,&#92;n        &#92;&quot;updates&#92;&quot;: 1250&#92;n      },&#92;n      {&#92;n        &#92;&quot;distance&#92;&quot;: 0.8276,&#92;n        &#92;&quot;sweeps&#92;&quot;: 0.5,&#92;n        &#92;&quot;updates&#92;&quot;: 2500&#92;n      },&#92;n      {&#92;n        &#92;&quot;distance&#92;&quot;: 0.6088,&#92;n        &#92;&quot;sweeps&#92;&quot;: 1.0,&#92;n        &#92;&quot;updates&#92;&quot;: 5000&#92;n      },&#92;n      {&#92;n        &#92;&quot;distance&#92;&quot;: 0.3656,&#92;n        &#92;&quot;sweeps&#92;&quot;: 2.0,&#92;n        &#92;&quot;updates&#92;&quot;: 10000&#92;n      },&#92;n      {&#92;n        &#92;&quot;distance&#92;&quot;: 0.1147,&#92;n        &#92;&quot;sweeps&#92;&quot;: 5.0,&#92;n        &#92;&quot;updates&#92;&quot;: 25000&#92;n      },&#92;n      {&#92;n        &#92;&quot;distance&#92;&quot;: 0.0259,&#92;n        &#92;&quot;sweeps&#92;&quot;: 10.0,&#92;n        &#92;&quot;updates&#92;&quot;: 50000&#92;n      }&#92;n    ]&#92;n  },&#92;n  &#92;&quot;encoding&#92;&quot;: {&#92;n    &#92;&quot;tooltip&#92;&quot;: [&#92;n      {&#92;n        &#92;&quot;field&#92;&quot;: &#92;&quot;updates&#92;&quot;,&#92;n        &#92;&quot;type&#92;&quot;: &#92;&quot;quantitative&#92;&quot;&#92;n      },&#92;n      {&#92;n        &#92;&quot;field&#92;&quot;: &#92;&quot;sweeps&#92;&quot;,&#92;n        &#92;&quot;type&#92;&quot;: &#92;&quot;quantitative&#92;&quot;&#92;n      },&#92;n      {&#92;n        &#92;&quot;field&#92;&quot;: &#92;&quot;distance&#92;&quot;,&#92;n        &#92;&quot;type&#92;&quot;: &#92;&quot;quantitative&#92;&quot;&#92;n      }&#92;n    ],&#92;n    &#92;&quot;x&#92;&quot;: {&#92;n      &#92;&quot;field&#92;&quot;: &#92;&quot;updates&#92;&quot;,&#92;n      &#92;&quot;scale&#92;&quot;: {&#92;n        &#92;&quot;type&#92;&quot;: &#92;&quot;log&#92;&quot;&#92;n      },&#92;n      &#92;&quot;title&#92;&quot;: &#92;&quot;single-customer updates per excursion&#92;&quot;,&#92;n      &#92;&quot;type&#92;&quot;: &#92;&quot;quantitative&#92;&quot;&#92;n    },&#92;n    &#92;&quot;y&#92;&quot;: {&#92;n      &#92;&quot;field&#92;&quot;: &#92;&quot;distance&#92;&quot;,&#92;n      &#92;&quot;title&#92;&quot;: &#92;&quot;max |coefficient \u2212 ergm|&#92;&quot;,&#92;n      &#92;&quot;type&#92;&quot;: &#92;&quot;quantitative&#92;&quot;&#92;n    }&#92;n  },&#92;n  &#92;&quot;height&#92;&quot;: 260,&#92;n  &#92;&quot;mark&#92;&quot;: {&#92;n    &#92;&quot;point&#92;&quot;: true,&#92;n    &#92;&quot;type&#92;&quot;: &#92;&quot;line&#92;&quot;&#92;n  },&#92;n  &#92;&quot;title&#92;&quot;: &#92;&quot;CD seed quality against excursion length&#92;&quot;,&#92;n  &#92;&quot;usermeta&#92;&quot;: {&#92;n    &#92;&quot;embedOptions&#92;&quot;: {}&#92;n  }&#92;n}&quot;'></marimo-mime-renderer></div>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "ZHCJ",
+      "code_hash": "22cc9800daa7fee9e068578843bd58ed",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h3 id=\"3-monte-carlo-maximum-likelihood\">3. Monte Carlo maximum likelihood</h3>\n<span class=\"paragraph\">Simulate at the current parameter, then maximise Geyer and Thompson's\nimportance-sampled likelihood ratio:</span>\n<span class=\"paragraph\">$$\\ell(\\theta) - \\ell(\\theta_t) = (\\theta - \\theta_t)^\\top g_{\\text{obs}}</span>\n<div class=\"language-maxima highlight\"><pre><span></span><code><span class=\"o\">-</span><span class=\"w\"> </span>\\<span class=\"nv\">log</span><span class=\"w\"> </span>\\<span class=\"nv\">frac</span><span class=\"p\">{</span><span class=\"mi\">1</span><span class=\"p\">}{</span><span class=\"nv\">M</span><span class=\"p\">}</span>\\<span class=\"nv\">sum_m</span><span class=\"w\"> </span><span class=\"nv\">e</span><span class=\"o\">^</span><span class=\"p\">{(</span>\\<span class=\"nv\">theta</span><span class=\"w\"> </span><span class=\"o\">-</span><span class=\"w\"> </span>\\<span class=\"nv\">theta_t</span><span class=\"p\">)</span><span class=\"o\">^</span>\\<span class=\"k\">to</span><span class=\"nv\">p</span><span class=\"w\"> </span><span class=\"nv\">g_m</span><span class=\"p\">}$$</span>\n</code></pre></div>\n<span class=\"paragraph\">Maximising that directly is unreliable. When <marimo-tex class=\"arithmatex\">||(g_{\\text{obs}}||)</marimo-tex> lies outside\nthe convex hull of the sampled statistics, the approximation is being\nextrapolated past its support. Following Hummel, Hunter and Handcock\n(2012), the observed statistics are first shrunk toward the sampled mean\nby the largest factor that keeps them inside the hull \u2014 a small linear\nprogram, solved here with <code>scipy.optimize.linprog</code>.</span>\n<span class=\"paragraph\">Two practical notes, both learned the hard way:</span>\n<ul>\n<li>The statistics differ in scale by two orders of magnitude\n  (<code>b2star2</code> \u2248 3\u00d710\u2075, attribute sums \u2248 3\u00d710\u00b3) while the parameters span\n  0.006 to 3. On the raw scale BFGS diverges to 10\u00b9\u00b3. The step is\n  computed on standardised draws and transformed back.</li>\n<li>Skipping the hull shrink inside CD looks safe \u2014 every excursion starts\n  at the observed network, so it must be inside the hull \u2014 but that holds\n  only for short excursions. Past about half a sweep the draws travel far\n  enough that it is outside again.</li>\n</ul></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "ROlb",
+      "code_hash": "cca054d1a025e1fdff1685d1d2243743",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/html": "<marimo-ui-element object-id='ROlb-0' random-id='7bc1c8d8-a1c9-5ed5-ee7a-596bd67c1169'><marimo-checkbox data-initial-value='false' data-label='&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003eRun the full fit now (about 95 seconds)&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;' data-disabled='false'></marimo-checkbox></marimo-ui-element>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "qnkX",
+      "code_hash": "83fd57d2c324aff58729e4bd689c76bd",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "TqIu",
+      "code_hash": "46570f918ec48042151c8d6bca392836",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/html": "<div style='display: flex;flex: 1;flex-direction: column;justify-content: flex-start;align-items: normal;flex-wrap: nowrap;gap: 0.5rem'><span class=\"markdown prose dark:prose-invert contents\"><span class=\"paragraph\"><strong>Coefficients (recorded from an earlier run) against <code>ergm</code>'s converged fit.</strong> Largest disagreement: <strong>0.00430</strong>.</span></span><marimo-ui-element object-id='TqIu-0' random-id='a946dbbf-ea85-17a9-657b-5cf4a0f1112c'><marimo-table data-initial-value='[]' data-label='null' data-data='&quot;[{&#92;&quot;term&#92;&quot;:&#92;&quot;b2cov.V1&#92;&quot;,&#92;&quot;ergmpy&#92;&quot;:-3.043502,&#92;&quot;ergm&#92;&quot;:-3.04510516288654,&#92;&quot;|difference|&#92;&quot;:0.001603162886540055},{&#92;&quot;term&#92;&quot;:&#92;&quot;b2cov.V2&#92;&quot;,&#92;&quot;ergmpy&#92;&quot;:-0.039734,&#92;&quot;ergm&#92;&quot;:-0.0358261392426342,&#92;&quot;|difference|&#92;&quot;:0.003907860757365801},{&#92;&quot;term&#92;&quot;:&#92;&quot;b2cov.V3&#92;&quot;,&#92;&quot;ergmpy&#92;&quot;:1.595903,&#92;&quot;ergm&#92;&quot;:1.5947823842633,&#92;&quot;|difference|&#92;&quot;:0.0011206157367000813},{&#92;&quot;term&#92;&quot;:&#92;&quot;b2factor.V4.2&#92;&quot;,&#92;&quot;ergmpy&#92;&quot;:1.229273,&#92;&quot;ergm&#92;&quot;:1.22497647995737,&#92;&quot;|difference|&#92;&quot;:0.0042965200426301475},{&#92;&quot;term&#92;&quot;:&#92;&quot;b2factor.V4.3&#92;&quot;,&#92;&quot;ergmpy&#92;&quot;:2.209014,&#92;&quot;ergm&#92;&quot;:2.20615388884762,&#92;&quot;|difference|&#92;&quot;:0.0028601111523798295},{&#92;&quot;term&#92;&quot;:&#92;&quot;b2factor.V4.4&#92;&quot;,&#92;&quot;ergmpy&#92;&quot;:1.221944,&#92;&quot;ergm&#92;&quot;:1.21931765546214,&#92;&quot;|difference|&#92;&quot;:0.002626344537859815},{&#92;&quot;term&#92;&quot;:&#92;&quot;b2factor.V4.5&#92;&quot;,&#92;&quot;ergmpy&#92;&quot;:1.183921,&#92;&quot;ergm&#92;&quot;:1.18472685447384,&#92;&quot;|difference|&#92;&quot;:0.000805854473840073},{&#92;&quot;term&#92;&quot;:&#92;&quot;b2star2&#92;&quot;,&#92;&quot;ergmpy&#92;&quot;:0.005792,&#92;&quot;ergm&#92;&quot;:0.00581877040473966,&#92;&quot;|difference|&#92;&quot;:2.6770404739659935e-05}]&quot;' data-total-rows='8' data-total-columns='4' data-max-columns='50' data-banner-text='&quot;&quot;' data-pagination='false' data-page-size='10' data-field-types='[[&quot;term&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;ergmpy&quot;,[&quot;number&quot;,&quot;f64&quot;]],[&quot;ergm&quot;,[&quot;number&quot;,&quot;f64&quot;]],[&quot;|difference|&quot;,[&quot;number&quot;,&quot;f64&quot;]]]' data-show-filters='true' data-show-download='true' data-show-search='true' data-show-column-summaries='false' data-show-data-types='true' data-show-page-size-selector='true' data-show-column-explorer='true' data-show-chart-builder='true' data-row-headers='[]' data-hidden-columns='[]' data-has-stable-row-id='false' data-lazy='false' data-preload='false'></marimo-table></marimo-ui-element></div>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "Vxnm",
+      "code_hash": "9b2ca580a013d33ee3389e7a9e5370ba",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><span class=\"paragraph\">Two caveats on reading any timing next to <code>ergm</code>'s. The R fit ran with\n<code>parallel = 4</code> and drew roughly 14\u00d7 more sweeps per iteration than the\nPython one, so the wall-clock ratio mixes a real speedup with a settings\ndifference. And these are Monte Carlo estimates \u2014 two independent runs of\nthe <em>same</em> implementation differ by a similar amount.</span></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "DnEU",
+      "code_hash": "52f7ba74703f9900d59835102adcbee1",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h2 id=\"part-4-prediction\">Part 4 \u2014 Prediction</h2>\n<span class=\"paragraph\">With coefficients in hand, each customer's probability over their own\nconsideration set is a softmax of the change statistics. No sampling is\ninvolved; this is closed form.</span></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "ulZA",
+      "code_hash": "40d05fd9cfe3f0d3100723bcf88b18e4",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "ecfG",
+      "code_hash": "fa1ec48a3ffa1219a4aa2198fb0da9b5",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><span class=\"paragraph\">Scored all <strong>5,000</strong> held-out customers in\n<strong>1.8 ms</strong>.</span>\n<table>\n<thead>\n<tr>\n<th></th>\n<th>top-1</th>\n<th>top-2</th>\n<th>top-3</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>share of customers whose actual purchase ranks here</td>\n<td>0.487</td>\n<td>0.761</td>\n<td>0.899</td>\n</tr>\n</tbody>\n</table>\n<span class=\"paragraph\">The R script's equivalent loop takes about 62 minutes for the same 5,000\ncustomers. That gap is algorithmic, not a language difference \u2014 R\nrecomputes every network statistic where these difference in closed form,\nand the same rewrite in R would capture most of it.</span></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "Pvdt",
+      "code_hash": "bb0a21cc597f235b936807d8491f5a28",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h2 id=\"what-this-leaves-out\">What this leaves out</h2>\n<span class=\"paragraph\"><code>ergm</code> carries 176 terms, 31 constraints, 18 proposals and 4 references.\nThis implements three term families and one constraint. The interesting\ndirection is not closing that gap term by term \u2014 it is the constraint\naxis, where each new constraint reuses the estimation core and only needs\nits own change statistics and Gibbs move.</span>\n<span class=\"paragraph\">One specification from the R script is missing on purpose:\n<code>b2degrange(25)</code> does not estimate. <code>ergm</code> reports <code>b2deg25+ not varying</code>\nand never completes an MCMLE iteration, which is presumably why the\nauthors publish output for the star model only.</span>\n<span class=\"paragraph\">Everything shown here is checked against <code>ergm</code> in <code>tests/</code>, which runs\nin about nine seconds and needs no R installation.</span></span>"
+          }
+        }
+      ],
+      "console": []
+    }
+  ]
+}

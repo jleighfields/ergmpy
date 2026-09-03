@@ -13,6 +13,12 @@ dependencies = [
 ]
 
 [dependency-groups]
+# marimo is its own group: a plain `uv sync` leaves it out, and the notebooks
+# then fail on `import marimo`. Install with `uv sync --group notebooks`.
+notebooks = [
+    "marimo>=0.9",
+    "altair>=5.0",
+]
 dev = [
     "pytest>=8.0",
     "pytest-xdist>=3.6",

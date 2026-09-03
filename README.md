@@ -31,7 +31,8 @@ The estimation core does not change.
 
 - `ergmpy/` — the estimation core, with `choice/` holding the first
   constrained model.
-- `benchmarks/python/` — scripts that time it and check it against R.
+- `benchmarks/python/` — timing runs. See
+  [`benchmarks/README.md`](benchmarks/README.md).
 - `benchmarks/r/` — the R baseline. `bench.R` is the authors'
   `Code_choice_set_6.R` with identical model and control settings, wrapped in
   per-phase timing.
@@ -39,8 +40,9 @@ The estimation core does not change.
   directory also holds the coefficients and probability matrix the tests
   compare against, so the suite needs no R installation.
   `results/r/RESULTS.md` writes up the R timings.
-- `notebooks/` — marimo notebooks. `01_replicate_r_script.py` walks the
-  authors' script end to end.
+- `notebooks/` — marimo notebooks. See
+  [`notebooks/README.md`](notebooks/README.md).
+- `tests/` — the suite. See [`tests/README.md`](tests/README.md).
 - `reference/` — unmodified clone of the authors' tutorial repository
   (`Yaxin-Cui/network-based-discrete-choice-model`): the original script, the
   train/test CSVs, and the published output screenshots. Read-only; it is the
@@ -61,53 +63,108 @@ eight free parameters: `b2cov.V1`–`V3`, `b2factor.V4.2`–`.5`, and `b2star2`.
 The published estimates in `reference/Plots/` are the acceptance target for
 any reimplementation.
 
-## Running it
+## Getting started
+
+### Prerequisites
+
+**[uv](https://docs.astral.sh/uv/)** manages the Python version, the virtual
+environment and the dependencies. It is the only thing you need installed
+first — it will fetch Python itself if you don't have 3.12+.
 
 ```bash
-uv sync --group dev
+curl -LsSf https://astral.sh/uv/install.sh | sh     # macOS / Linux
+# or:  brew install uv
+# or:  pipx install uv
 ```
 
-That installs `ergmpy` as an editable package, so `import ergmpy` works from
-anywhere without a path insert.
+You never create a venv or run `pip` in this project. `uv sync` reads
+`pyproject.toml` and `uv.lock` and builds an exact environment in `.venv/`;
+`uv run <command>` runs a command inside it, syncing first if anything drifted.
+So `uv run pytest` always runs against the right dependencies, whether or not
+you remembered to activate anything.
+
+**R** is optional. It is needed only to regenerate the comparison outputs,
+which are already committed — everything else runs without it.
+
+### Setup
+
+```bash
+git clone https://github.com/jleighfields/ergmpy.git
+cd ergmpy
+uv sync --group dev
+uv run pytest
+```
+
+The suite finishes in about nine seconds. If it passes, the implementation is
+reproducing `ergm`'s numbers on committed comparison data.
+
+`uv sync` installs `ergmpy` as an editable package, so `import ergmpy` works
+from anywhere — no path juggling in scripts or notebooks.
+
+### The notebook
+
+```bash
+uv sync --group notebooks     # marimo is a separate group; a plain sync omits it
+uv run marimo edit notebooks/01_replicate_r_script.py
+```
+
+That opens the notebook in a browser. If you have not used
+[marimo](https://docs.marimo.io/) before, three things differ from Jupyter:
+
+- **Notebooks are plain `.py` files.** They diff, review and import like any
+  other source, and there is no JSON or output blob in the repo.
+- **Execution is reactive, not top-to-bottom.** marimo tracks which cell
+  defines which variable and reruns whatever depends on a change. There is no
+  stale hidden state, and a variable cannot be defined in two cells.
+- **`edit` versus `run`.** `marimo edit` is the editable notebook;
+  `marimo run <file>` serves it read-only as an app, with code hidden;
+  `marimo export html <file> -o out.html` executes it headless and writes a
+  static page, which is how a notebook is checked without a browser.
+
+## Running things
 
 | Command | What it does |
 |---|---|
-| `uv run python benchmarks/python/verify_predict.py` | Checks the choice probabilities against R's saved probability matrix. |
-| `uv run python benchmarks/python/verify_ch.py` | Checks the convex-hull shrink factor against `ergm`'s `shrink_into_CH`. |
-| `uv run python benchmarks/python/bench_mple.py` | Fits by pseudo-likelihood; checks the Hessian against finite differences. |
-| `uv run python benchmarks/python/bench_sampler.py` | Times the Gibbs sweep, pure Python against numba. |
-| `uv run python benchmarks/python/run_mcmle_full.py` | Fits by MCMLE and compares against `ergm`'s estimates. |
-| `uv run python benchmarks/python/bench_cd_seeded.py` | The full recipe: pseudo-likelihood, then contrastive divergence, then MCMLE. |
-| `uv run python benchmarks/python/sweep_cd.py` | Sweeps the CD excursion length. |
-| `uv run ruff check python/ benchmarks/python/` | Lint. |
+| `uv run pytest` | The suite. Nine seconds, no R needed. |
+| `uv run ruff check ergmpy benchmarks tests` | Lint. |
+| `uv run marimo edit notebooks/01_replicate_r_script.py` | The walkthrough notebook. Needs `--group notebooks`. |
+| `uv run python benchmarks/python/bench_cd_seeded.py` | The full fit: pseudo-likelihood, then contrastive divergence, then MCMLE. ~95 s. |
+| `uv run python benchmarks/python/verify_predict.py` | Prediction against R's saved probability matrix, with timings. |
+| `uv run python benchmarks/python/bench_sampler.py` | The Gibbs sweep, pure Python against numba. |
+| `uv run python benchmarks/python/sweep_cd.py` | The contrastive-divergence excursion-length sweep. ~3 min. |
 
 Set `NUMBA_DISABLE_JIT=1` to run the sampler kernel as plain Python — the same
 source, uncompiled, which is how the compiled path is checked.
 
-### The R baseline
+## Rerunning the comparison against R
+
+Only needed to regenerate the R side; the committed outputs already let the
+Python checks run. Full detail in
+[`benchmarks/README.md`](benchmarks/README.md).
 
 ```bash
-benchmarks/r/setup.sh                       # installs ergm into ./rlib
-cd results/r && FITS=star Rscript ../../benchmarks/r/bench.R
+benchmarks/r/setup.sh                    # installs ergm into ./rlib, once
+
+cd results/r
+FITS=star MAXIT_CAP=2 PRED_N=200 Rscript ../../benchmarks/r/bench.R   # ~8 min
+FITS=star Rscript ../../benchmarks/r/bench.R                          # ~13 min
+cd ../..
+
+Rscript benchmarks/r/export_fits.R           # fitted objects -> tracked CSVs
+Rscript benchmarks/r/fit_mple.R              # ergm's own pseudo-likelihood
+Rscript benchmarks/r/gen_convex_hull_cases.R # the saved shrink-factor cases
 ```
 
-`setup.sh` installs from Posit Package Manager with `HTTPUserAgent` set, which
-serves precompiled binaries. That matters: from CRAN source, `ergm` needs
-`lpSolveAPI` and `robustbase`, both of which require a Fortran compiler.
-`install.packages()` reports success and installs nothing when one is missing,
-so confirm with `library(ergm)` rather than the exit code.
+`setup.sh` installs from Posit Package Manager, which serves precompiled
+binaries. That matters: from CRAN source, `ergm` needs `lpSolveAPI` and
+`robustbase`, both of which require a Fortran compiler. `install.packages()`
+reports success and installs nothing when one is missing, so the script
+verifies with `library(ergm)` rather than trusting the exit code.
 
-Three more R scripts complete the chain, each runnable from the repo root:
-`gen_convex_hull_cases.R` regenerates the saved shrink-factor cases,
-`export_fits.R` turns the fitted objects `bench.R` saves into the CSVs the
-Python tests read, and `fit_mple.R` runs ergm's own pseudo-likelihood for
-comparison. The `.rds` fits are gitignored, so `export_fits.R` needs `bench.R`
-to have run first; the CSVs it writes are tracked.
-
-`bench.R` takes three environment variables, all of which only shorten a run —
-no statistical setting changes. `FITS` selects which of `null,degree,star,both`
-to fit; `MAXIT_CAP` caps MCMLE iterations; `PRED_N` limits the prediction loop.
-The defaults reproduce the authors' script exactly.
+`bench.R` takes three environment variables that only shorten a run — no
+statistical setting changes. `FITS` selects from `null,degree,star,both`;
+`MAXIT_CAP` caps MCMLE iterations; `PRED_N` limits the prediction loop. The
+defaults reproduce the authors' script exactly, which takes a few hours.
 
 ## Results
 

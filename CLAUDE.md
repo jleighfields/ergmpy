@@ -125,6 +125,26 @@ rather than general tie toggling.
   passes every index; a contrastive-divergence excursion passes a random
   handful. One implementation serves both.
 
+## Notebooks
+
+- **marimo, not Jupyter.** Notebooks are plain `.py` files, so they diff and
+  review like source and carry no output blobs. Both run modes have to keep
+  working: `marimo edit` in a browser, and `marimo export html` headless,
+  which is how one gets checked without a person watching.
+- **`uv sync --group notebooks` first.** marimo is its own dependency group; a
+  plain `uv sync` leaves it out and the notebook then fails on `import marimo`.
+- **Notebooks import from `ergmpy` and define no modeling logic.** A function
+  in `notebooks/` that computes a statistic, a probability or an estimate
+  belongs in the package. The notebook's job is to explain what the package
+  does, and an explanation that reimplements its subject can drift from it.
+- **A variable is defined in exactly one cell.** marimo's reactive graph
+  forbids redefinition, which is what removes stale hidden state — but it means
+  a name reused across cells is an error rather than a shadowing.
+- **Number sparsely** (01, 10, 20) so a step can be inserted without
+  renumbering everything after it.
+- Notebooks are entry points, so they may configure logging and construct
+  parameters. Library modules may not.
+
 ## Configuration and parameters
 
 - **Estimator settings are keyword arguments with defaults, not globals.**
@@ -222,8 +242,11 @@ restating it in prose creates drift.
   complete as you go, and add a review section when finished.
 - **Move finished plans to `tasks/completed/`.** Several can coexist.
 - **After any correction from the user, add the pattern to
-  `docs/lessons.md`** — the rule that prevents the same mistake next time.
-  Review it when starting related work.
+  `tasks/lessons.md`** — the rule that prevents the same mistake next time,
+  with the reasoning that makes it stick. Review it when starting related
+  work. A lesson general enough to bind every session graduates into this
+  file's **Core principles**; the entries there about statistical tests and
+  about diagnosing a diverging optimizer arrived that way.
 
 ## Minimalism (write less)
 
