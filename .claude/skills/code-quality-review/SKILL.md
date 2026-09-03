@@ -396,7 +396,7 @@ are an ordered hierarchy you walk until one solves the problem.
   correctness argument, and a divergence between copies would show up only as
   slightly wrong estimates.
 - **`updates_python` and `updates_numba` are not two implementations.** Do
-  not flag them as duplication; `python/ergmpy/sampler.py`'s module docstring
+  not flag them as duplication; `ergmpy/sampler.py`'s module docstring
   says why.
 - **Estimator settings are keyword arguments, not globals.** A sampling knob
   read from a module-level constant is a source-of-truth finding. `TERM_NAMES`

@@ -14,7 +14,13 @@ two phases of the reference script that recompute what they could difference.
 `convex_hull/` holds six saved cases from `ergm`'s `shrink_into_CH`, used to
 check `ergmpy.convex_hull` without an R installation.
 
-The `.rds` fitted objects are gitignored: they are large and regenerable.
+`environment.txt` records the R and package versions `setup.sh` installed, and
+`run_settings.txt` the `MAXIT_CAP` and `PRED_N` a `bench.R` run used. Both are
+written by the scripts, not by hand, so a timing can always be traced to the
+environment and settings that produced it.
+
+The `.rds` fitted objects and `.png` plots are gitignored: they are large and
+regenerable.
 The `.csv` files derived from them are tracked, because regenerating those
 means re-running a fit that takes 13 minutes.
 

@@ -36,7 +36,7 @@ Source of Truth for Parameter Values** section.
 - **In scope:** every tracked Python file under `python/` and
   `benchmarks/python/`, except `tests/`, which is in scope only for unused
   test-helper bloat. `benchmarks/` is in scope for one thing specifically —
-  modeling logic defined there that belongs in `python/ergmpy/` instead.
+  modeling logic defined there that belongs in `ergmpy/` instead.
 - **`reference/` is never in scope.** It is an unmodified clone of the
   authors' published tutorial and is the specification this repo is checked
   against. Nothing in it is this project's code to delete.
@@ -48,7 +48,7 @@ Source of Truth for Parameter Values** section.
   Check it against what is actually imported.
 - **`updates_python` and `updates_numba` are not two implementations.**
   Neither name is dead code and they must not be collapsed;
-  `python/ergmpy/sampler.py`'s module docstring says why.
+  `ergmpy/sampler.py`'s module docstring says why.
 - **The benchmark scripts hold slower paths on purpose.** Pure-Python and
   numba timings of the same kernel exist so a speedup is reported against an
   honest baseline. Do not report the slow one as dead.

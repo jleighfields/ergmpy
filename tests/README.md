@@ -1,5 +1,8 @@
 # tests
 
+The suite checks the implementation against `ergm`'s recorded output and
+against quantities computed a second way.
+
 ```bash
 uv run pytest
 ```
@@ -22,6 +25,10 @@ about R comparisons belonging in `benchmarks/`: the rule is aimed at things
 needing a live R installation and minutes of runtime, and these read a
 committed CSV in milliseconds.
 
-Every test has been watched to fail. Dropping the `+1` from the star delta,
-skipping the sampler's degree decrement, deleting a term from the Hessian and
-inverting the shrink factor each turn the relevant file red.
+Four mutations were run to confirm these tests can fail: dropping the `+1`
+from the star delta, skipping the sampler's degree decrement, deleting a term
+from the Hessian, and inverting the shrink factor. Each turned the relevant
+file red. That covers one test per file, not all twenty-two.
+
+The degree-decrement mutation is not hypothetical — it was committed by
+accident in `247833f`, and this suite is what caught it.

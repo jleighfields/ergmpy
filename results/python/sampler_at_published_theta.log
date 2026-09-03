@@ -1,0 +1,14 @@
+Simulated at ergm's published star-model estimates, 300 draws, burn_in=100, thin=20.
+Elapsed: 2.3 s
+
+term                  observed  simulated mean          sd   gap / sd
+b2cov.V1               -3106.6         -3105.8        30.2      0.024
+b2cov.V2               -3470.9         -3471.4        39.0      0.012
+b2cov.V3               -2827.3         -2825.7        36.5      0.043
+b2factor.V4.2            729.0           728.6        27.7      0.014
+b2factor.V4.3           2200.0          2200.7        34.1      0.021
+b2factor.V4.4            752.0           753.1        24.5      0.046
+b2factor.V4.5            325.0           324.6        15.1      0.024
+b2star2               299387.0        298270.7      9207.1      0.121
+
+largest standardized gap: 0.121 sd

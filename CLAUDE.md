@@ -16,9 +16,9 @@ instructions are edited in place and there are no sidecar files.
   than proposing arbitrary tie toggles. Do not let the package drift toward
   chasing `ergm`'s catalogue.
 - **R is the oracle, not a dependency.** `ergm` produces the numbers every
-  Python component is checked against. Nothing in `python/ergmpy/` calls R, and
+  Python component is checked against. Nothing in `ergmpy/` calls R, and
   the package must stay installable without it.
-- **Where things live:** `python/ergmpy/` is the estimation core with
+- **Where things live:** `ergmpy/` is the estimation core with
   `choice/` holding the first constrained model,
   `benchmarks/python/` the scripts that time it and check it against R,
   `benchmarks/r/` the instrumented copy of the authors' script, `results/`
