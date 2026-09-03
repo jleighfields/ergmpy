@@ -1,0 +1,8 @@
+# R library built locally by benchmarks/r/setup.sh — large, compiled, machine-specific
+rlib/
+# Fitted models and probability matrices are regenerable; timings are not, so they stay tracked.
+results/r/*.rds
+results/r/*.png
+__pycache__/
+*.pyc
+.venv/

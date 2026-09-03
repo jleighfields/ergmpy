@@ -1,0 +1,39 @@
+"""Checks ch_shrink.shrink_into_ch against ergm's shrink_into_CH on saved cases."""
+
+import time
+from pathlib import Path
+
+import numpy as np
+from ch_shrink import shrink_into_ch
+
+R_GAMMA = {1: 0.5003023501, 2: 22.1831136834, 3: 0.1876695020,
+           4: 21.2571901294, 5: 0.1327143535, 6: 51.8217094913}
+R_SECONDS = {1: 0.0010, 2: 0.0050, 3: 0.0090, 4: 0.0010, 5: 0.0060, 6: 0.0010}
+
+
+def main() -> None:
+    """Runs every saved case and prints the Python/R comparison."""
+    print(f"{'case':>5} {'n':>5} {'d':>2} {'R gamma':>16} {'py gamma':>16} "
+          f"{'rel diff':>10} {'R ms':>7} {'py ms':>7}")
+    worst = 0.0
+    for case in sorted(R_GAMMA):
+        M = np.loadtxt(Path(f"/tmp/ch_M_{case}.csv"), delimiter=",", skiprows=1)
+        p = np.loadtxt(Path(f"/tmp/ch_p_{case}.csv"), delimiter=",", skiprows=1, ndmin=1)
+        best = min(_timed(p, M) for _ in range(5))
+        g, dt = best[1], best[0]
+        rel = abs(g - R_GAMMA[case]) / abs(R_GAMMA[case])
+        worst = max(worst, rel)
+        n, d = M.shape
+        print(f"{case:>5} {n:>5} {d:>2} {R_GAMMA[case]:>16.10f} {g:>16.10f} "
+              f"{rel:>10.2e} {R_SECONDS[case] * 1000:>7.1f} {dt * 1000:>7.2f}")
+    print(f"\nworst relative difference: {worst:.2e}")
+
+
+def _timed(p: np.ndarray, M: np.ndarray) -> tuple[float, float]:
+    t0 = time.perf_counter()
+    g = shrink_into_ch(p, M)
+    return time.perf_counter() - t0, g
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,134 @@
+[14:37:45] 01_read_train_csv: 0.05 s
+[14:37:50] 02_make_network_train: 5.22 s
+[14:38:00] 03_plot_networks: 9.50 s
+NULL
+Model and/or observational constraints are not dyad-independent. Dyad imputation cannot be used. Please ensure your LHS network satisfies all constraints.
+Starting contrastive divergence estimation via CD-MCMLE:
+Iteration 1 of at most 60:
+Convergence test P-value:4.2e-14
+Warning: ‘glpk’ selected as the solver, but package ‘Rglpk’ is not available; falling back to ‘lpSolveAPI’. This should be fine unless the sample size and/or the number of parameters is very big.
+1 The log-likelihood improved by 0.06052.
+Iteration 2 of at most 60:
+Convergence test P-value:1.6e-01
+1 The log-likelihood improved by 0.007391.
+Iteration 3 of at most 60:
+Convergence test P-value:1.1e-01
+1 The log-likelihood improved by 0.008107.
+Iteration 4 of at most 60:
+Convergence test P-value:2.3e-01
+1 The log-likelihood improved by 0.005849.
+Iteration 5 of at most 60:
+Convergence test P-value:8.3e-02
+1 The log-likelihood improved by 0.009003.
+Iteration 6 of at most 60:
+Convergence test P-value:3.2e-03
+1 The log-likelihood improved by 0.01848.
+Iteration 7 of at most 60:
+Convergence test P-value:3.8e-01
+1 The log-likelihood improved by 0.005364.
+Iteration 8 of at most 60:
+Convergence test P-value:2.9e-01
+1 The log-likelihood improved by 0.005414.
+Iteration 9 of at most 60:
+Convergence test P-value:2.6e-01
+1 The log-likelihood improved by 0.006268.
+Iteration 10 of at most 60:
+Convergence test P-value:2.3e-01
+1 The log-likelihood improved by 0.006712.
+Iteration 11 of at most 60:
+Convergence test P-value:4.1e-01
+1 The log-likelihood improved by 0.004749.
+Iteration 12 of at most 60:
+Convergence test P-value:3e-01
+1 The log-likelihood improved by 0.002931.
+Iteration 13 of at most 60:
+Convergence test P-value:2.7e-02
+1 The log-likelihood improved by 0.01353.
+Iteration 14 of at most 60:
+Convergence test P-value:8.6e-03
+1 The log-likelihood improved by 0.01959.
+Iteration 15 of at most 60:
+Convergence test P-value:1.5e-02
+1 The log-likelihood improved by 0.01415.
+Iteration 16 of at most 60:
+Convergence test P-value:1.7e-02
+1 The log-likelihood improved by 0.01318.
+Iteration 17 of at most 60:
+Convergence test P-value:8e-01
+Convergence detected. Stopping.
+1 The log-likelihood improved by 0.002327.
+Finished CD.
+Starting Monte Carlo maximum likelihood estimation (MCMLE):
+Iteration 1 of at most 30:
+1 Optimizing with step length 0.0260.
+The log-likelihood improved by 4.1961.
+Estimating equations are not within tolerance region.
+Iteration 2 of at most 30:
+1 Optimizing with step length 0.0287.
+The log-likelihood improved by 3.4913.
+Estimating equations are not within tolerance region.
+Iteration 3 of at most 30:
+1 Optimizing with step length 0.0241.
+The log-likelihood improved by 2.6795.
+Estimating equations are not within tolerance region.
+Iteration 4 of at most 30:
+1 Optimizing with step length 0.0350.
+The log-likelihood improved by 3.8189.
+Estimating equations are not within tolerance region.
+Iteration 5 of at most 30:
+1 Optimizing with step length 0.0325.
+The log-likelihood improved by 3.3917.
+Estimating equations are not within tolerance region.
+Iteration 6 of at most 30:
+1 Optimizing with step length 0.0378.
+The log-likelihood improved by 3.4780.
+Estimating equations are not within tolerance region.
+Iteration 7 of at most 30:
+1 Optimizing with step length 0.0355.
+The log-likelihood improved by 2.7145.
+Estimating equations are not within tolerance region.
+Iteration 8 of at most 30:
+1 Optimizing with step length 0.0305.
+The log-likelihood improved by 2.3962.
+Estimating equations are not within tolerance region.
+Iteration 9 of at most 30:
+1 Optimizing with step length 0.0542.
+The log-likelihood improved by 4.4918.
+Estimating equations are not within tolerance region.
+Iteration 10 of at most 30:
+1 Optimizing with step length 0.0511.
+The log-likelihood improved by 3.2202.
+Estimating equations are not within tolerance region.
+Iteration 11 of at most 30:
+1 Optimizing with step length 0.0599.
+The log-likelihood improved by 3.3363.
+Estimating equations are not within tolerance region.
+Iteration 12 of at most 30:
+1 Optimizing with step length 0.0627.
+The log-likelihood improved by 3.7888.
+Estimating equations are not within tolerance region.
+Iteration 13 of at most 30:
+1 Optimizing with step length 0.0608.
+The log-likelihood improved by 2.5083.
+Estimating equations are not within tolerance region.
+Iteration 14 of at most 30:
+1 Optimizing with step length 0.0821.
+The log-likelihood improved by 3.5853.
+Estimating equations are not within tolerance region.
+Iteration 15 of at most 30:
+1 Optimizing with step length 0.0841.
+The log-likelihood improved by 3.7903.
+Estimating equations are not within tolerance region.
+Iteration 16 of at most 30:
+1 Optimizing with step length 0.1115.
+The log-likelihood improved by 3.7013.
+Estimating equations are not within tolerance region.
+Iteration 17 of at most 30:
+1 Optimizing with step length 0.0938.
+The log-likelihood improved by 2.6329.
+Estimating equations are not within tolerance region.
+Iteration 18 of at most 30:
+1 Optimizing with step length 0.1364.
+The log-likelihood improved by 4.1558.
+Estimating equations are not within tolerance region.
+Iteration 19 of at most 30:

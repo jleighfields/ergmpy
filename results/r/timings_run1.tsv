@@ -1,0 +1,5 @@
+phase	seconds
+01_read_train_csv	0.05
+02_make_network_train	5.18
+03_plot_networks	9.53
+04_fit_null	136.57
