@@ -5,17 +5,16 @@ customer's long-run marginal must equal the plain softmax of their attribute
 utilities. Any error in the sweep's sampling shows up as drift from that.
 """
 
-import sys
 import time
 from pathlib import Path
 
 import numpy as np
 
-ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "python"))
 from ergmpy import sampler
-from ergmpy.choice import mple  # noqa: E402
-from ergmpy.choice.predict import load, softmax_utilities  # noqa: E402
+from ergmpy.choice import mple
+from ergmpy.choice.predict import load, softmax_utilities
+
+ROOT = Path(__file__).resolve().parents[2]
 
 
 def setup(theta: np.ndarray):

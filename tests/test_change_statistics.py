@@ -7,9 +7,9 @@ wrong delta cannot agree with them by construction.
 """
 
 import numpy as np
+
 from ergmpy.choice.predict import change_statistics
 from ergmpy.mcmle import observed_statistics
-
 from tests.helpers import (
     attribute_sums_from_scratch,
     b2star2_from_scratch,

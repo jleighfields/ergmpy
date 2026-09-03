@@ -5,17 +5,16 @@ the gradient carries no signal; too many and CD approaches MCMLE and inherits
 the instability it exists to avoid. This finds where the useful range is.
 """
 
-import sys
 import time
 from pathlib import Path
 
 import numpy as np
 
-ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "python"))
-from ergmpy import cd  # noqa: E402
+from ergmpy import cd
 from ergmpy.choice import mple
-from ergmpy.choice.predict import load  # noqa: E402
+from ergmpy.choice.predict import load
+
+ROOT = Path(__file__).resolve().parents[2]
 
 R_COEF = np.array([-3.0451052, -0.0358261, 1.5947824, 1.2249765,
                    2.2061539, 1.2193177, 1.1847269, 0.0058188])

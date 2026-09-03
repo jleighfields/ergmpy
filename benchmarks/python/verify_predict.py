@@ -4,16 +4,15 @@ Uses the coefficients from the same saved ergm fit that produced R's
 prob_y_star matrix, so any difference is implementation, not estimation.
 """
 
-import sys
 import time
 from pathlib import Path
 
 import numpy as np
 import polars as pl
 
+from ergmpy.choice.predict import choice_probabilities, load, top_n_accuracy
+
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "python"))
-from ergmpy.choice.predict import choice_probabilities, load, top_n_accuracy  # noqa: E402
 
 R_RESULTS = ROOT / "results" / "r"
 N_COMPARED = 200  # R's saved matrix only has rows for the customers it scored

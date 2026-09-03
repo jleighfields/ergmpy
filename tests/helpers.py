@@ -1,6 +1,7 @@
 """Plain functions used by the tests, readable without knowing pytest."""
 
 import numpy as np
+
 from ergmpy.choice.predict import ChoiceData
 
 

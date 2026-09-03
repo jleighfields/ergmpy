@@ -1,6 +1,7 @@
 """Pseudo-likelihood estimation, checked against derivatives computed a second way."""
 
 import numpy as np
+
 from ergmpy.choice import mple
 from ergmpy.choice.predict import change_statistics
 

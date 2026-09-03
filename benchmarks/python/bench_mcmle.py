@@ -1,16 +1,15 @@
 """Fits the star model by MCMLE in Python and compares against ergm."""
 
-import sys
 import time
 from pathlib import Path
 
 import numpy as np
 
-ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "python"))
 from ergmpy import mcmle
-from ergmpy.choice import mple  # noqa: E402
-from ergmpy.choice.predict import choice_probabilities, load, top_n_accuracy  # noqa: E402
+from ergmpy.choice import mple
+from ergmpy.choice.predict import choice_probabilities, load, top_n_accuracy
+
+ROOT = Path(__file__).resolve().parents[2]
 
 PUBLISHED = np.array([-3.0567573, -0.0363712, 1.6013929, 1.2357093,
                       2.2218421, 1.2257136, 1.1918759, 0.0057696])

@@ -29,14 +29,18 @@ The estimation core does not change.
 
 ## Layout
 
-- `python/ergmpy/` — the estimation core, with `choice/` holding the
-  first constrained model.
+- `ergmpy/` — the estimation core, with `choice/` holding the first
+  constrained model.
 - `benchmarks/python/` — scripts that time it and check it against R.
 - `benchmarks/r/` — the R baseline. `bench.R` is the authors'
   `Code_choice_set_6.R` with identical model and control settings, wrapped in
   per-phase timing.
-- `results/` — measurements from both sides. `results/r/RESULTS.md` writes up
-  the R timings.
+- `results/r/` and `results/python/` — what each side produced. The R
+  directory also holds the coefficients and probability matrix the tests
+  compare against, so the suite needs no R installation.
+  `results/r/RESULTS.md` writes up the R timings.
+- `notebooks/` — marimo notebooks. `01_replicate_r_script.py` walks the
+  authors' script end to end.
 - `reference/` — unmodified clone of the authors' tutorial repository
   (`Yaxin-Cui/network-based-discrete-choice-model`): the original script, the
   train/test CSVs, and the published output screenshots. Read-only; it is the
@@ -92,6 +96,13 @@ serves precompiled binaries. That matters: from CRAN source, `ergm` needs
 `lpSolveAPI` and `robustbase`, both of which require a Fortran compiler.
 `install.packages()` reports success and installs nothing when one is missing,
 so confirm with `library(ergm)` rather than the exit code.
+
+Three more R scripts complete the chain, each runnable from the repo root:
+`gen_convex_hull_cases.R` regenerates the saved shrink-factor cases,
+`export_fits.R` turns the fitted objects `bench.R` saves into the CSVs the
+Python tests read, and `fit_mple.R` runs ergm's own pseudo-likelihood for
+comparison. The `.rds` fits are gitignored, so `export_fits.R` needs `bench.R`
+to have run first; the CSVs it writes are tracked.
 
 `bench.R` takes three environment variables, all of which only shorten a run —
 no statistical setting changes. `FITS` selects which of `null,degree,star,both`

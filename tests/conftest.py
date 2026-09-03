@@ -8,6 +8,7 @@ the generator rather than the model.
 from pathlib import Path
 
 import pytest
+
 from ergmpy.choice.predict import ChoiceData, load
 
 REFERENCE = Path(__file__).resolve().parents[1] / "reference"

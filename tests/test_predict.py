@@ -8,6 +8,7 @@ needing a live R and minutes of runtime.
 
 import numpy as np
 import polars as pl
+
 from ergmpy.choice.predict import choice_probabilities, load, top_n_accuracy
 
 TERMS = ["b2cov.V1", "b2cov.V2", "b2cov.V3", "b2factor.V4.2",

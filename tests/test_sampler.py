@@ -1,6 +1,7 @@
 """The Gibbs kernel, checked where randomness can be removed or averaged out."""
 
 import numpy as np
+
 from ergmpy import sampler
 from ergmpy.choice.predict import softmax_utilities
 

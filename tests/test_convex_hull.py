@@ -1,6 +1,7 @@
 """The Hummel step length, checked on geometry with a known answer."""
 
 import numpy as np
+
 from ergmpy.convex_hull import shrink_into_ch
 
 
@@ -29,7 +30,7 @@ def test_matches_the_factors_ergm_produced(recorded_r) -> None:
     """Reproduces ergm's shrink_into_CH on cases saved from R."""
     expected = {1: 0.5003023501, 2: 22.1831136834, 3: 0.1876695020,
                 4: 21.2571901294, 5: 0.1327143535, 6: 51.8217094913}
-    cases = recorded_r / "convex_hull_cases"
+    cases = recorded_r / "r" / "convex_hull"
     for case, gamma in expected.items():
         M = np.loadtxt(cases / f"ch_M_{case}.csv", delimiter=",", skiprows=1)
         p = np.loadtxt(cases / f"ch_p_{case}.csv", delimiter=",", skiprows=1, ndmin=1)
