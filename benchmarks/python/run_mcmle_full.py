@@ -38,7 +38,7 @@ def main() -> None:
     print(f"\n{'term':<16}{'python':>12}{'ergm':>12}{'diff':>10}"
           f"{'py SE':>11}{'ergm SE':>11}")
     for name, c, s, rc, rs in zip(mcmle.TERM_NAMES, result.coef,
-                                  result.std_error, R_COEF, R_SE):
+                                  result.std_error, R_COEF, R_SE, strict=True):
         print(f"{name:<16}{c:>12.5f}{rc:>12.5f}{c - rc:>10.5f}{s:>11.5f}{rs:>11.5f}")
 
     probabilities = choice_probabilities(data, result.coef[:7], result.coef[7])

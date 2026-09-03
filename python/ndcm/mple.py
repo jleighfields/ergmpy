@@ -37,6 +37,7 @@ class MPLEResult:
 
     def __init__(self, coef: np.ndarray, std_error: np.ndarray, llk: float,
                  n_iterations: int, hessian: np.ndarray) -> None:
+        """Stores the estimates; the class docstring describes each attribute."""
         self.coef = coef
         self.std_error = std_error
         self.log_pseudo_likelihood = llk
@@ -51,7 +52,7 @@ class MPLEResult:
         """
         z = self.coef / self.std_error
         lines = [f"{'term':<16}{'Estimate':>13}{'Std. Error':>13}{'z value':>11}"]
-        for name, c, s, zz in zip(TERM_NAMES, self.coef, self.std_error, z):
+        for name, c, s, zz in zip(TERM_NAMES, self.coef, self.std_error, z, strict=True):
             lines.append(f"{name:<16}{c:>13.6f}{s:>13.6f}{zz:>11.3f}")
         lines.append(f"\nlog pseudo-likelihood: {self.log_pseudo_likelihood:.6f}")
         return "\n".join(lines)

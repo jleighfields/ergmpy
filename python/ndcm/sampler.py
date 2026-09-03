@@ -11,12 +11,20 @@ pseudo-likelihood code uses. Only two product degrees move per update, so a
 step costs O(set_size) rather than a network traversal, and no general ERGM
 tie-toggling machinery is needed.
 
-Both implementations here are deliberately the same code. `sweep_python` is the
-readable reference; `sweep_numba` is the identical function under @njit, so the
-two cannot drift and either can serve as the oracle for the other.
+`updates_python` and `updates_numba` are built from one source definition --
+`gibbs_updates` bare, and the same function passed through @njit -- so the
+readable reference and the compiled kernel cannot drift, and either can serve
+as the oracle for the other. Setting NUMBA_DISABLE_JIT=1 runs the compiled
+path as plain Python.
+
+The utility computed below is the same change statistic that
+`predict.change_statistics` builds, written out inline as a scalar expression:
+a numba kernel cannot call that array-based function. That makes this the
+second copy of the formula, and the two must be changed together.
 """
 
 import math
+from collections.abc import Callable
 
 import numpy as np
 
@@ -26,9 +34,17 @@ try:
 except ImportError:  # pragma: no cover - exercised only where numba is absent
     HAVE_NUMBA = False
 
-    def njit(*args, **kwargs):
-        """Falls back to the undecorated function when numba is unavailable."""
-        def wrap(fn):
+    def njit(*args: object, **kwargs: object) -> Callable:
+        """Falls back to the undecorated function when numba is unavailable.
+
+        Args:
+            *args: The decorated function, when used bare as `@njit`.
+            **kwargs: Decorator options, all ignored.
+
+        Returns:
+            The function itself, or a decorator returning it.
+        """
+        def wrap(fn: Callable) -> Callable:
             return fn
         return wrap if not args else args[0]
 
@@ -90,7 +106,7 @@ updates_numba = njit(cache=True, fastmath=False)(gibbs_updates)
 
 def run_sweeps(choice_sets: np.ndarray, current: np.ndarray, degree: np.ndarray,
                linear: np.ndarray, theta_star2: float, n_sweeps: int,
-               kernel=updates_numba) -> None:
+               kernel: Callable = updates_numba) -> None:
     """Passes over every customer `n_sweeps` times.
 
     Args:

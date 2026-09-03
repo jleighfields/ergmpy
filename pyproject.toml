@@ -1,0 +1,58 @@
+[project]
+name = "ndcm"
+version = "0.1.0"
+description = "Bipartite-ERGM discrete choice model, validated against R's ergm"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "numpy>=2.0",
+    "scipy>=1.14",
+    "polars>=1.0",
+    # numba pins a numpy ceiling, so it decides how new numpy can be here.
+    "numba>=0.60",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "pytest-xdist>=3.6",
+    "ruff>=0.6",
+    "detect-secrets>=1.5",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["python/ndcm"]
+
+[tool.ruff]
+line-length = 90
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "SIM", "UP", "S", "D", "ANN"]
+ignore = [
+    # The package documents modules, classes and public functions; D104 would
+    # additionally require a docstring on every __init__.py, and D203/D213 pick
+    # the opposite side of two formatting choices ruff itself calls a conflict.
+    "D104", "D203", "D213",
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.per-file-ignores]
+# Benchmarks are scripts: they print rather than return, hardcode the paths of
+# recorded R outputs, and insert the package on sys.path before importing it,
+# which is an import that cannot sit at the top of the file.
+"benchmarks/python/*.py" = ["E402", "S101", "T201", "ANN"]
+"tests/**/*.py" = ["S101", "ANN", "D"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# Anything needing an R installation lives in benchmarks/, so the suite runs
+# with no R present. -n auto is left off: the suite is small enough that
+# worker startup would dominate.
+addopts = "-q"

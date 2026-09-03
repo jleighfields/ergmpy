@@ -23,8 +23,8 @@ def main() -> None:
     """Loads both sides, compares probabilities, and reports timings."""
     coefs = pl.read_csv(R_RESULTS / "coef_star_maxit2.csv")
     # The offset row is -Inf, so polars types the column as string; cast it.
-    lookup = dict(zip(coefs["term"].to_list(),
-                      coefs["estimate"].cast(pl.Float64, strict=False).to_list()))
+    estimates = coefs["estimate"].cast(pl.Float64, strict=False).to_list()
+    lookup = dict(zip(coefs["term"].to_list(), estimates, strict=True))
     theta_linear = np.array([lookup[t] for t in
                              ["b2cov.V1", "b2cov.V2", "b2cov.V3", "b2factor.V4.2",
                               "b2factor.V4.3", "b2factor.V4.4", "b2factor.V4.5"]])

@@ -43,6 +43,7 @@ class ChoiceData:
 
     def __init__(self, choice_sets: np.ndarray, chosen: np.ndarray,
                  design: np.ndarray, degree: np.ndarray) -> None:
+        """Stores the arrays; the class docstring describes each attribute."""
         self.choice_sets = choice_sets
         self.chosen = chosen
         self.design = design
@@ -78,7 +79,7 @@ def load(path: str) -> ChoiceData:
     slot = np.zeros(n_customers, dtype=np.int32)
     cidx = df["cidx"].to_numpy()
     pidx = df["pidx"].to_numpy()
-    for c, p in zip(cidx, pidx):
+    for c, p in zip(cidx, pidx, strict=True):
         choice_sets[c, slot[c]] = p
         slot[c] += 1
     if (choice_sets < 0).any():

@@ -67,7 +67,7 @@ def main() -> None:
 
         if tag == "train":
             print(f"\n{'term':<16}{'python MPLE':>14}{'ergm MCMLE pub':>16}{'ratio':>9}")
-            for name, est in zip(mple.TERM_NAMES, result.coef):
+            for name, est in zip(mple.TERM_NAMES, result.coef, strict=True):
                 pub = PUBLISHED[name]
                 print(f"{name:<16}{est:>14.6f}{pub:>16.7f}{est / pub:>9.3f}")
 

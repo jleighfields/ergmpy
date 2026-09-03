@@ -1,0 +1,16 @@
+MPLE              0.1 s   max|diff| 1.19275
+CD (10 sweeps)   69.0 s   max|diff| 0.01602
+MCMLE            25.8 s   max|diff| 0.00430   3 iterations, converged=True
+TOTAL            94.8 s      (ergm: 781.8 s on 4 cores)
+
+term                 Estimate   Std. Error    z value
+b2cov.V1            -3.043502     0.098094    -31.026
+b2cov.V2            -0.039734     0.049888     -0.796
+b2cov.V3             1.595903     0.070380     22.675
+b2factor.V4.2        1.229273     0.058441     21.034
+b2factor.V4.3        2.209014     0.068804     32.106
+b2factor.V4.4        1.221944     0.063981     19.099
+b2factor.V4.5        1.183921     0.076205     15.536
+b2star2              0.005792     0.000122     47.496
+
+converged after 3 iterations

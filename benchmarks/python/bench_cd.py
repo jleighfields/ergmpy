@@ -40,7 +40,7 @@ def main() -> None:
     cd_seconds = time.perf_counter() - t0
     print(f"CD seed ({cd_seconds:5.1f} s, {len(history)} iters)  "
           f"max|diff vs ergm| = {distance(seed):.4f}  b2star2 = {seed[7]:.6f}")
-    print(f"  CD gap trace: " + " ".join(
+    print("  CD gap trace: " + " ".join(
         f"{h['max_standardized_gap']:.2f}" for h in history[:8]) + " ...")
     print()
 

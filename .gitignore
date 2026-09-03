@@ -6,3 +6,4 @@ results/r/*.png
 __pycache__/
 *.pyc
 .venv/
+.venv/

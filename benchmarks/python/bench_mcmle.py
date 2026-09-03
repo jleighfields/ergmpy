@@ -37,7 +37,7 @@ def main() -> None:
 
     print(f"\n{'term':<16}{'python':>12}{'ergm pub':>12}{'py SE':>11}{'ergm SE':>11}")
     for name, c, s, pc, ps in zip(mcmle.TERM_NAMES, result.coef, result.std_error,
-                                  PUBLISHED, PUBLISHED_SE):
+                                  PUBLISHED, PUBLISHED_SE, strict=True):
         print(f"{name:<16}{c:>12.5f}{pc:>12.5f}{s:>11.5f}{ps:>11.5f}")
 
     probabilities = choice_probabilities(data, result.coef[:7], result.coef[7])
