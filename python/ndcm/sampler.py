@@ -33,9 +33,14 @@ except ImportError:  # pragma: no cover - exercised only where numba is absent
         return wrap if not args else args[0]
 
 
-def gibbs_sweep(choice_sets: np.ndarray, current: np.ndarray, degree: np.ndarray,
-                linear: np.ndarray, theta_star2: float, n_sweeps: int) -> None:
-    """Runs Gibbs sweeps in place over every customer.
+def gibbs_updates(choice_sets: np.ndarray, current: np.ndarray, degree: np.ndarray,
+                  linear: np.ndarray, theta_star2: float,
+                  customers: np.ndarray) -> None:
+    """Resamples the listed customers' purchases in place, in the order given.
+
+    Taking the customers to visit as an argument lets a full sweep and a short
+    contrastive-divergence excursion share one kernel: a sweep passes every
+    customer once, CD passes a random handful.
 
     Args:
         choice_sets: (n_customers, set_size) product indices.
@@ -43,44 +48,63 @@ def gibbs_sweep(choice_sets: np.ndarray, current: np.ndarray, degree: np.ndarray
         degree: (n_products,) purchase counts; kept consistent with `current`.
         linear: (n_products,) precomputed attribute utility per product.
         theta_star2: Coefficient on the b2star2 statistic.
-        n_sweeps: Number of full passes over all customers.
+        customers: Indices of the customers to resample, visited in order.
     """
-    n_customers, set_size = choice_sets.shape
+    set_size = choice_sets.shape[1]
     weights = np.empty(set_size)
+    for idx in range(len(customers)):
+        i = customers[idx]
+        k = current[i]
+        degree[k] -= 1
+
+        largest = -1.0e308
+        for s in range(set_size):
+            j = choice_sets[i, s]
+            u = linear[j] + theta_star2 * degree[j]
+            weights[s] = u
+            if u > largest:
+                largest = u
+
+        total = 0.0
+        for s in range(set_size):
+            weights[s] = math.exp(weights[s] - largest)
+            total += weights[s]
+
+        target = np.random.random() * total
+        cumulative = 0.0
+        picked = set_size - 1
+        for s in range(set_size):
+            cumulative += weights[s]
+            if target <= cumulative:
+                picked = s
+                break
+
+        j = choice_sets[i, picked]
+        current[i] = j
+        degree[j] += 1
+
+
+updates_python = gibbs_updates
+updates_numba = njit(cache=True, fastmath=False)(gibbs_updates)
+
+
+def run_sweeps(choice_sets: np.ndarray, current: np.ndarray, degree: np.ndarray,
+               linear: np.ndarray, theta_star2: float, n_sweeps: int,
+               kernel=updates_numba) -> None:
+    """Passes over every customer `n_sweeps` times.
+
+    Args:
+        choice_sets: (n_customers, set_size) product indices.
+        current: (n_customers,) current purchase per customer; updated in place.
+        degree: (n_products,) purchase counts; kept consistent with `current`.
+        linear: (n_products,) precomputed attribute utility per product.
+        theta_star2: Coefficient on the b2star2 statistic.
+        n_sweeps: Number of full passes.
+        kernel: Which kernel to call, `updates_numba` or `updates_python`.
+    """
+    order = np.arange(choice_sets.shape[0], dtype=np.int32)
     for _ in range(n_sweeps):
-        for i in range(n_customers):
-            k = current[i]
-            degree[k] -= 1
-
-            largest = -1.0e308
-            for s in range(set_size):
-                j = choice_sets[i, s]
-                u = linear[j] + theta_star2 * degree[j]
-                weights[s] = u
-                if u > largest:
-                    largest = u
-
-            total = 0.0
-            for s in range(set_size):
-                weights[s] = math.exp(weights[s] - largest)
-                total += weights[s]
-
-            target = np.random.random() * total
-            cumulative = 0.0
-            picked = set_size - 1
-            for s in range(set_size):
-                cumulative += weights[s]
-                if target <= cumulative:
-                    picked = s
-                    break
-
-            j = choice_sets[i, picked]
-            current[i] = j
-            degree[j] += 1
-
-
-sweep_python = gibbs_sweep
-sweep_numba = njit(cache=True, fastmath=False)(gibbs_sweep)
+        kernel(choice_sets, current, degree, linear, theta_star2, order)
 
 
 def network_statistics(choice_sets: np.ndarray, current: np.ndarray,

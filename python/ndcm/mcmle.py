@@ -99,10 +99,10 @@ def simulate(data: ChoiceData, theta: np.ndarray, n_draws: int, burn_in: int,
     linear = np.ascontiguousarray(data.design @ theta[:7])
     theta_star2 = float(theta[7])
 
-    sampler.sweep_numba(choice_sets, current, degree, linear, theta_star2, burn_in)
+    sampler.run_sweeps(choice_sets, current, degree, linear, theta_star2, burn_in)
     draws = np.empty((n_draws, 8))
     for m in range(n_draws):
-        sampler.sweep_numba(choice_sets, current, degree, linear, theta_star2, thin)
+        sampler.run_sweeps(choice_sets, current, degree, linear, theta_star2, thin)
         draws[m] = sampler.network_statistics(choice_sets, current, data.design,
                                               data.n_products)
     return draws, current

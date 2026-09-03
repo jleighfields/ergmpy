@@ -54,7 +54,7 @@ def check_marginals(choice_sets, linear, n_sweeps: int = 2000) -> float:
     counts = np.zeros((len(subset), k))
     np.random.seed(1)
     for _ in range(n_sweeps):
-        sampler.sweep_numba(subset, current, degree, linear, 0.0, 1)
+        sampler.run_sweeps(subset, current, degree, linear, 0.0, 1)
         counts += (subset == current[:, None])
     empirical = counts / n_sweeps
     analytic = softmax_utilities(linear[subset])
@@ -73,16 +73,16 @@ def main() -> None:
     print(f"marginal check (star2 = 0), max abs error: "
           f"{check_marginals(choice_sets, linear):.4f}\n")
 
-    for label, fn, sweeps in [("pure python", sampler.sweep_python, 20),
-                              ("numba", sampler.sweep_numba, 20)]:
+    for label, kernel, sweeps in [("pure python", sampler.updates_python, 20),
+                                  ("numba", sampler.updates_numba, 20)]:
         cs, current, degree, lin, ts, _ = setup(theta)
         if label == "numba":  # pay the compile once, outside the timed region
             t0 = time.perf_counter()
-            fn(cs, current.copy(), degree.copy(), lin, ts, 1)
+            sampler.run_sweeps(cs, current.copy(), degree.copy(), lin, ts, 1, kernel)
             print(f"numba compile + first call: {time.perf_counter() - t0:.2f} s")
         np.random.seed(7)
         t0 = time.perf_counter()
-        fn(cs, current, degree, lin, ts, sweeps)
+        sampler.run_sweeps(cs, current, degree, lin, ts, sweeps, kernel)
         elapsed = time.perf_counter() - t0
         per_sweep = elapsed / sweeps
         updates = choice_sets.shape[0] / per_sweep
