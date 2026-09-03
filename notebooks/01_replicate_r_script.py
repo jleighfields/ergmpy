@@ -369,7 +369,7 @@ def _(mple_fit, run_full_fit, time, train):
 
 @app.cell
 def _(ROOT, mcmle_fit, mo, np, pl):
-    ergm_converged = pl.read_csv(ROOT / "results" / "r" / "mcmle_star_converged.csv")
+    ergm_converged = pl.read_csv(ROOT / "results" / "r" / "mcmle_star_maxit30.csv")
     terms = ["b2cov.V1", "b2cov.V2", "b2cov.V3", "b2factor.V4.2",
              "b2factor.V4.3", "b2factor.V4.4", "b2factor.V4.5", "b2star2"]
     ergm_lookup = dict(
@@ -393,7 +393,7 @@ def _(ROOT, mcmle_fit, mo, np, pl):
     }).with_columns((pl.col("ergmpy") - pl.col("ergm")).abs().alias("|difference|"))
 
     mo.vstack([
-        mo.md(f"**Coefficients ({source}) against `ergm`'s converged fit.** "
+        mo.md(f"**Coefficients ({source}) against `ergm`'s fit at maxit = 30.** "
               f"Largest disagreement: "
               f"**{comparison['|difference|'].max():.5f}**."),
         comparison,
@@ -456,10 +456,13 @@ def _(accuracy, mo, predict_seconds, test_set):
         |---|---|---|---|
         | share of customers whose actual purchase ranks here | {accuracy[0]:.3f} | {accuracy[1]:.3f} | {accuracy[2]:.3f} |
 
-        The R script's equivalent loop takes about 62 minutes for the same 5,000
-        customers. That gap is algorithmic, not a language difference — R
-        recomputes every network statistic where these difference in closed form,
-        and the same rewrite in R would capture most of it.
+        The R script's equivalent loop takes about 62 minutes for the same
+        5,000 customers. That gap is an algorithm, not a language. To score one
+        alternative the R script calls `summary(formula)` on the whole
+        5,300-node network, once per alternative per customer, for values that
+        differ from each other by a single toggled edge. `change_statistics`
+        computes those differences directly. Making that same substitution in R
+        would close most of the gap.
         """
     )
     return

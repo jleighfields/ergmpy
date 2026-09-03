@@ -1,10 +1,4 @@
 phase	seconds
 01_read_train_csv	0.05
-02_make_network_train	5.22
-03_plot_networks	9.50
-06_fit_star	781.75
-08_read_test_csv	0.06
-09_make_network_test	3.82
-10_fit_test_structure_1iter	216.35
-11_prediction_loop	0.74
-12_topn_eval	0.01
+02_make_network_train	5.16
+03_plot_networks	9.41

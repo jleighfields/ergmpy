@@ -38,6 +38,13 @@ why the estimation here is cheap.
 | MCMLE coefficients, CD-seeded | 0.0043 | `results/python/full_recipe_mple_cd_mcmle.log` |
 | MCMLE coefficients, MPLE-seeded | 0.0089, standard errors within 4% | `results/python/mcmle_star_from_mple.log` |
 
+The two MCMLE rows compare against `results/r/mcmle_star_maxit30.csv` — the R
+script's own setting for the star model. The authors' published output used
+`MCMLE.maxit = 200` instead, so the committed script and the published figures
+do not match. At 30, ergm reports that the fit did not converge; the
+coefficients still land within about 0.01 of the published ones. Pass
+`MAXIT=200` to `bench.R` to reproduce the published setting.
+
 Timings, for reference rather than as a benchmark:
 
 | | Python | R |
@@ -46,12 +53,25 @@ Timings, for reference rather than as a benchmark:
 | Choice probabilities, 5,000 customers | 1.4 ms | ~62 min (projected from 148.95 s for 200) |
 | Convex-hull shrink factor, per case | 1.4–7.0 ms | 1–9 ms |
 
-The two sides are not doing equal work in the first row: R drew about 250,000
-sweeps per MCMLE iteration against Python's 18,100, and both converged. The
-second row is an algorithmic difference — the R script recomputes every network
-statistic 25,000 times where the change statistics differ in closed form, and
-the same rewrite in R would capture most of it. The third row is the control:
-the same small linear program on both sides, at the same speed.
+The three rows measure different things.
+
+The first is not equal work, and neither side's stopping rule is the other's.
+R drew about 250,000 sweeps per MCMLE iteration against Python's 18,100. R ran
+to its iteration limit of 30 and reported "MCMLE estimation did not converge";
+Python stopped after 3 CD-seeded iterations having met a tolerance of 0.15 on
+the largest standardized gap. The estimates agree to 0.0043 regardless, which
+is the comparison worth making — but neither number is a converged fit in
+ergm's sense.
+
+The second is an algorithm, not a language. To score one alternative, the R
+script calls `summary(formula)` on the whole 5,300-node network — 25,000 times
+over, once per alternative per customer — for values that differ from each
+other by a single toggled edge. `change_statistics` computes those differences
+directly instead. Making that same substitution in R would close most of the
+gap.
+
+The third is the control: the same linear program on both sides, at the same
+speed.
 
 ## What is not recreated
 

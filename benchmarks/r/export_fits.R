@@ -32,7 +32,9 @@ export_coefficients <- function(rds, csv) {
 }
 
 export_coefficients("fit_star_maxit2.rds", "coef_star_maxit2.csv")
-export_coefficients("fit_star.rds", "mcmle_star_converged.csv")
+# Named for its iteration limit, not "converged": at maxit = 30 ergm reports
+# "MCMLE estimation did not converge after 30 iterations".
+export_coefficients("fit_star.rds", "mcmle_star_maxit30.csv")
 
 # The probability matrix is scored for only the first PRED_N customers, so the
 # rows beyond that are zero and the Python comparison reads just the scored ones.
