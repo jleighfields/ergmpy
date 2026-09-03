@@ -15,6 +15,11 @@ enough to seed MCMLE.
 
 The step machinery is shared with `ergmpy.mcmle` rather than duplicated -- only
 how the draws are generated differs.
+
+References:
+    Krivitsky, P.N. (2017). Using contrastive divergence to seed Monte Carlo
+        MLE for exponential-family random graph models. Computational
+        Statistics and Data Analysis, 107, 149-161.
 """
 
 import numpy as np

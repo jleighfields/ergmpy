@@ -16,6 +16,14 @@ factor that keeps them inside the hull, and the step targets that instead.
 
 Standard errors come from the inverse of the sampled statistics' covariance,
 which is the Fisher information for an exponential family.
+
+References:
+    Geyer, C.J. and Thompson, E.A. (1992). Constrained Monte Carlo maximum
+        likelihood for dependent data. Journal of the Royal Statistical
+        Society B, 54(3), 657-699.
+    Hummel, R.M., Hunter, D.R. and Handcock, M.S. (2012). Improving
+        simulation-based algorithms for fitting ERGMs. Journal of
+        Computational and Graphical Statistics, 21(4), 920-939.
 """
 
 import numpy as np

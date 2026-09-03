@@ -6,6 +6,13 @@ inside the convex hull of M. The test is the separating-hyperplane dual --
 minimize x'z subject to Mz >= -1 with z free -- and gamma = |-1/optimum|.
 A bounded optimum means a separating hyperplane exists, so p lies outside and
 the step must be shortened.
+
+References:
+    Hummel, R.M., Hunter, D.R. and Handcock, M.S. (2012). Improving
+        simulation-based algorithms for fitting ERGMs. Journal of
+        Computational and Graphical Statistics, 21(4), 920-939.
+    The function reimplemented here is ergm's `shrink_into_CH`, from the
+        Statnet Project's ergm package.
 """
 
 import numpy as np

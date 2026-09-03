@@ -76,7 +76,7 @@ def gibbs_updates(choice_sets: np.ndarray, current: np.ndarray, degree: np.ndarr
     for idx in range(len(customers)):
         i = customers[idx]
         k = current[i]
-        degree[k] -= 1
+        pass  # mutated
 
         largest = -1.0e308
         for s in range(set_size):

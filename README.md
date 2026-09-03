@@ -3,6 +3,17 @@
 Exponential-random-graph models on **constrained sample spaces**, in Python,
 checked against the `ergm` R package.
 
+## Scope
+
+**This is a research and educational project.** It reproduces a published
+model and makes its estimation machinery legible in Python. It is not
+production software — no stability guarantee, no deprecation policy, no
+warranty of fitness. Don't use it to support a decision without validating it
+against `ergm` on your own data, which is what `benchmarks/` is for.
+
+It originates none of the methods it implements. Full attribution is in
+[Credit](#credit) below; if you use this code, cite Sha et al. (2023).
+
 ## What this is, and is not
 
 Not a port of `ergm`. That package carries 176 terms, 31 constraints, 18
@@ -21,8 +32,7 @@ to any model: importance-sampled maximum likelihood with the Hummel step
 length, seeded by contrastive divergence. `ergmpy.choice` is the first
 constraint implemented — the bipartite discrete choice model of Sha et al.
 (2023), "A network-based discrete choice model for decision-based design,"
-*Design Science* 9, e7, whose data and reference implementation are reproduced
-under `reference/` with the authors' citation terms.
+*Design Science* 9, e7 — see **Scope** above for attribution.
 
 Adding a constraint means writing its change statistics and its Gibbs move.
 The estimation core does not change.
@@ -165,6 +175,76 @@ verifies with `library(ergm)` rather than trusting the exit code.
 statistical setting changes. `FITS` selects from `null,degree,star,both`;
 `MAXIT_CAP` caps MCMLE iterations; `PRED_N` limits the prediction loop. The
 defaults reproduce the authors' script exactly, which takes a few hours.
+
+## Credit
+
+The model, the data and the reference implementation are the authors' work,
+reproduced under the terms they set: free use for research and related
+projects, with citation.
+
+> Sha, Z., Cui, Y., Xiao, Y., Stathopoulos, A., Contractor, N., Fu, Y. and
+> Chen, W., 2023. A network-based discrete choice model for decision-based
+> design. *Design Science*, 9, p.e7.
+
+```bibtex
+@article{sha2023network,
+  title={A network-based discrete choice model for decision-based design},
+  author={Sha, Zhenghui and Cui, Yaxin and Xiao, Yinshuang and Stathopoulos,
+          Amanda and Contractor, Noshir and Fu, Yan and Chen, Wei},
+  journal={Design Science},
+  volume={9},
+  pages={e7},
+  year={2023},
+  publisher={Cambridge University Press}
+}
+```
+
+If you use this code, cite the paper it implements. Everything under
+`reference/` is the authors' repository, unmodified — the tutorial and its
+data were published by Yaxin Cui at
+[`Yaxin-Cui/network-based-discrete-choice-model`](https://github.com/Yaxin-Cui/network-based-discrete-choice-model).
+
+### The methods
+
+Every algorithm in `ergmpy/` is someone else's:
+
+| Implemented here | Due to |
+|---|---|
+| `mcmle.py` — importance-sampled maximum likelihood | Geyer & Thompson (1992), *JRSS-B* 54(3), 657–699 |
+| `convex_hull.py` and the step control in `mcmle.py` | Hummel, Hunter & Handcock (2012), *JCGS* 21(4), 920–939 |
+| `cd.py` — contrastive divergence as an MCMLE seed | Krivitsky (2017), *CSDA* 107, 149–161 |
+| `choice/` — the bipartite choice model and its constraint | Sha et al. (2023), *Design Science* 9, e7 |
+
+**`ergm` and the Statnet Project** are the reference implementation this is
+checked against, and the source of the term vocabulary used throughout
+(`b2star2`, `b2degrange`, `b1degrees`). Its authors:
+
+> Handcock, M.S., Hunter, D.R., Butts, C.T., Goodreau, S.M., Krivitsky, P.N.
+> and Morris, M. (2026). *ergm: Fit, Simulate and Diagnose Exponential-Family
+> Models for Networks*. The Statnet Project, <https://statnet.org>.
+> R package version 4.12.0.
+
+> Krivitsky, P.N., Hunter, D.R., Morris, M. and Klumb, C. (2023). ergm 4: New
+> Features for Analyzing Exponential-Family Random Graph Models.
+> *Journal of Statistical Software*, 105(6), 1–44.
+> [doi:10.18637/jss.v105.i06](https://doi.org/10.18637/jss.v105.i06)
+
+> Hunter, D.R., Handcock, M.S., Butts, C.T., Goodreau, S.M. and Morris, M.
+> (2008). ergm: A Package to Fit, Simulate and Diagnose Exponential-Family
+> Models for Networks. *Journal of Statistical Software*, 24(3), 1–29.
+> [doi:10.18637/jss.v024.i03](https://doi.org/10.18637/jss.v024.i03)
+
+The `network` package (Butts, 2008, *JSS* 24(2)) builds the bipartite objects
+the R baseline uses.
+
+Where this package is faster than `ergm`, that is not an improvement on their
+work. `ergm` is general across 176 terms and 31 constraints and reaches that
+generality through a proposal mechanism that toggles arbitrary ties; this
+implements one constraint and exploits it. The comparison measures a
+specialisation against a general tool, and the general tool is the harder
+thing to have built.
+
+**Tools.** NumPy, SciPy, polars, numba, marimo, uv, ruff and pytest.
 
 ## Results
 

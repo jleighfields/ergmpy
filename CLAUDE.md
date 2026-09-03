@@ -24,6 +24,10 @@ instructions are edited in place and there are no sidecar files.
   `benchmarks/r/` the instrumented copy of the authors' script, `results/`
   the measurements both produce, and `rlib/` a locally built R library that
   is not tracked.
+- **This is a research and educational project, and says so.** There is no
+  stability guarantee and no production use. Do not add language to the README
+  or docstrings that implies either, and do not remove the citation — the
+  authors' terms permit this use conditional on it.
 - **`reference/` is read only.** It is an unmodified clone of the authors'
   tutorial repository — their script, their two CSVs, their published output
   screenshots. It is the specification. Never edit anything under it; if a

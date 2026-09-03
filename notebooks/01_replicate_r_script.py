@@ -41,8 +41,12 @@ def _(mo):
         | 3. ERGM estimation | Pseudo-likelihood, contrastive divergence, MCMLE |
         | 4. Prediction | Change statistics and top-N scoring |
 
-        The model is from Sha et al. (2023), *Design Science* 9, e7. The data
-        under `reference/` is the authors', unmodified.
+        The model is from Sha et al. (2023), *Design Science* 9, e7, and the
+        data under `reference/` is the authors', unmodified and reproduced
+        under their terms — free use for research, with citation.
+
+        This notebook, and the package it demonstrates, are for research and
+        teaching. Nothing here is production software.
         """
     )
     return
