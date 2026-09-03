@@ -113,10 +113,11 @@ rather than general tie toggling.
 
 - **`gibbs_updates` is decorated, not duplicated.** `updates_python` and
   `updates_numba` are built from one source definition, so the readable
-  reference and the compiled version cannot drift, and either can serve as
-  the oracle for the other. Run with `NUMBA_DISABLE_JIT=1` to execute the
-  compiled path as plain Python. `sampler.py`'s module docstring is the
-  authority on this.
+  reference and the compiled version cannot drift. Run with
+  `NUMBA_DISABLE_JIT=1` to execute the compiled path as plain Python. They do
+  not share a random stream, though — `np.random.seed` from Python does not
+  reach numba's generator — so compare them on distributions or on a forced
+  choice, never draw for draw. `sampler.py`'s module docstring has the detail.
 - **Keep it to the numba-supported subset** — loops, flat arrays, scalars.
   A dict, a class or a ragged structure inside it will fail to compile, and
   the resulting typing error names almost anything except the offending line.

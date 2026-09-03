@@ -13,9 +13,14 @@ tie-toggling machinery is needed.
 
 `updates_python` and `updates_numba` are built from one source definition --
 `gibbs_updates` bare, and the same function passed through @njit -- so the
-readable reference and the compiled kernel cannot drift, and either can serve
-as the oracle for the other. Setting NUMBA_DISABLE_JIT=1 runs the compiled
-path as plain Python.
+readable reference and the compiled kernel cannot drift. Setting
+NUMBA_DISABLE_JIT=1 runs the compiled path as plain Python.
+
+The two do not share a random stream. Inside @njit, numpy's random functions
+draw from numba's own generator state, which `np.random.seed` called from
+Python does not reach, so seeding both fixes two different streams. They agree
+on the distribution they sample and on any choice the utilities make
+deterministic -- not draw for draw.
 
 The utility computed below is the same change statistic that
 `predict.change_statistics` builds, written out inline as a scalar expression:
