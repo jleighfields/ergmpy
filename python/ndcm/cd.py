@@ -20,6 +20,7 @@ how the draws are generated differs.
 import numpy as np
 
 from ndcm import sampler
+from ndcm.convex_hull import shrink_into_ch
 from ndcm.mcmle import geyer_thompson_step, observed_statistics
 from ndcm.predict import ChoiceData
 
@@ -90,8 +91,11 @@ def fit(data: ChoiceData, theta0: np.ndarray, max_iterations: int = 60,
                         "max_standardized_gap": float(gap.max())})
         if gap.max() < tolerance:
             break
-        # Every excursion starts at the observed network, so g_obs sits inside
-        # the sample's hull by construction and no step shrinking is needed.
-        theta = geyer_thompson_step(theta, draws, g_obs)
+        # Every excursion starts at the observed network, but with enough
+        # updates the draws travel far enough that g_obs leaves their convex
+        # hull again, and an unshrunk step then diverges. Shrink as MCMLE does.
+        gamma = min(1.0, shrink_into_ch(g_obs, draws))
+        target = gamma * g_obs + (1.0 - gamma) * draws.mean(axis=0)
+        theta = geyer_thompson_step(theta, draws, target)
 
     return theta, history
