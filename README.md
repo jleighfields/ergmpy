@@ -246,6 +246,20 @@ thing to have built.
 
 **Tools.** NumPy, SciPy, polars, numba, marimo, uv, ruff and pytest.
 
+### Licence
+
+This project's own code, tests, notebooks and documentation are
+[MIT](LICENSE) licensed.
+
+**`reference/` is not covered by that grant.** It is the authors' repository,
+vendored unmodified, and stays under the terms they published: free use for
+research and related projects, with citation. An MIT notice on this repository
+does not relicense their data, their R script, or the paper — nobody here has
+the standing to do that.
+
+`results/r/` is derived from running their script on their data, so treat it
+the same way.
+
 ## Results
 
 Measured on 48 cores, R 4.6.1 with ergm 4.12.0. The R fits use
