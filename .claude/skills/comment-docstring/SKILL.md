@@ -50,38 +50,34 @@ For the file body:
 
 ## Style rules
 
-Follow the project's CLAUDE.md conventions:
-
-- Google-style docstrings with summary, Args, and Returns
-- Use `X | None` syntax (not `Optional[X]`)
-- Import modules directly for type hints (no forward references)
-- Prioritize simplicity and readability
-- Add comments that help someone on-boarding to the project
-- Do not prepend function names with `_` — internal helpers still get
-  real names
+`CLAUDE.md`'s **Code style** section is the authority — docstring format,
+type-hint syntax, import style and the naming rules. Read it rather than a
+copy here; ruff enforces the mechanical half (`D`, `ANN`, `UP`), so run it
+and treat what it reports as settled before reading for the rest.
 
 ## Example output
 
 ```python
-def summarize_runs(run_dir: Path, metric: str) -> pl.DataFrame:
-    """Collect one metric from every run under a directory.
+def change_statistics(data: ChoiceData) -> np.ndarray:
+    """Build the change statistic of every alternative, conditional on the rest.
 
-    Each run writes a ``config.json`` beside its outputs; this pairs the
-    two so runs can be compared without reloading the full result set.
+    Holding all other customers' purchases fixed, the statistic vector for
+    customer i choosing product j is the product's own attributes together
+    with the b2star2 contribution. Since ``C(n+1,2) - C(n,2) = n``, that
+    contribution is the degree j would have *without* customer i's own edge.
 
     Args:
-        run_dir: Directory holding one subdirectory per run.
-        metric: Column to extract from each run's metrics table.
+        data: The dataset to build statistics for.
 
     Returns:
-        One row per run: ``[run_label, timestamp, <metric>]``, sorted
-        oldest first.
+        ``(n_customers, set_size, 8)`` change statistics: V1-V3, the four
+        V4 dummies, then the b2star2 term.
 
     Raises:
-        FileNotFoundError: If ``run_dir`` holds no run subdirectories. An
-            empty result is far more often a wrong path than a genuine
-            "no runs yet", so this fails loudly rather than returning an
-            empty frame.
+        ValueError: If any customer's consideration set is a different size
+            from the rest. A ragged set means the input was not the
+            fixed-size choice data this model assumes, which is a wrong
+            file far more often than a genuine variation.
     """
 ```
 
@@ -212,15 +208,16 @@ whether it is strongly worded.
 ## Hollowed-out terms
 
 A domain term shortened until the remainder no longer names the concept.
-"Customer minutes interrupted (CMI)" written as "the minutes" is the shape, and
-the failure is hard to spot because `minutes` is an ordinary English word:
-a reader without the domain can parse the sentence and take the everyday
-meaning. A term shortened to an abbreviation is visibly unexplained by
-comparison — nobody mistakes "the SAIFI" for something they already know.
+The two-star statistic `b2star2` written as "the popularity term" is the
+case here, and the failure is hard to spot because "popularity" is an
+ordinary English word: a reader without the domain can parse the sentence
+and take the everyday meaning, missing that it counts two-stars centred on
+products. A term left as its `ergm` name is visibly unexplained by
+comparison — nobody mistakes "b2degrange" for something they already know.
 
 Short forms appear for the same reason dangling references do. After
 repeated use, people already in the conversation stop writing the full
-term, and everyone knows which minutes the short form names. That context
+term, and everyone knows which statistic the short form names. That context
 is absent for the next reader, and no marker identifies where it stopped.
 
 **Grep for the terms this repo defines.** A term introduced with a
@@ -234,24 +231,25 @@ grep -rnoEi '[a-z]+( [a-z]+){1,3} \([A-Z]{2,6}\)' <paths> \
 
 Then grep each returned term's head noun standing alone. Expect noise in
 both directions: the first pass matches ordinary parentheticals, and a hit
-on the second is a candidate rather than a finding — "the minutes" is correct
+on the second is a candidate rather than a finding — "the statistic" is correct
 in a sentence that established the term two lines above.
 
 **Read for the ones no file spells out.** A term nobody wrote in full has no
 expansion to find. This case needs manual review because a repo where the
 short form has fully taken over is also the one where no expansion exists.
 The signal is a bare noun that is also common English — scale, shape,
-minutes, load, factor, spend, bands — carrying a meaning specific to this
-project. Ask what a reader who has the repo and no domain background would
+degree, statistic, draw, sweep, term — carrying a meaning specific to this
+project. "Degree" is the one to watch: it is a product's purchase count
+here, not an angle or a polynomial order. Ask what a reader who has the repo and no domain background would
 take it to mean, then whether that is what it means.
 
 **Fix them** — restore the qualifier the term lost:
 
 | Instead of | Write |
 |---|---|
-| "the minutes for each year" | "the customer minutes interrupted (CMI) for each year" |
-| "grows with the factor" | "grows with the min-of-n scale reduction factor" |
-| "stays inside the budget" | "stays inside the annual replacement budget — the capital the policy may spend that year" |
+| "the statistic for each alternative" | "the b2star2 change statistic for each alternative" |
+| "grows with the degree" | "grows with the product's purchase count (its degree in the bipartite network)" |
+| "stays inside the hull" | "stays inside the convex hull of the sampled statistics, where the importance-sampling approximation has support" |
 
 **Expand on first use per file, then use the short form.** Every occurrence
 expanded adds no new information after the first, and a reader who has met
@@ -260,7 +258,7 @@ docstring, or in the docstring of the first function that uses it — is
 where the expansion belongs.
 
 **This skill does not rename identifiers.** Where the hollowing reached the
-identifiers — `minutes_by_year()` where `cmi_by_year()` names the series —
+identifiers — `stats()` where `change_statistics()` names the quantity —
 the repair is a rename, which changes every caller. This skill edits in place,
 so renaming would change the API inside a pass nobody expects to touch it.
 Name it in your summary and leave it alone; `/code-quality-review` reports
@@ -281,7 +279,7 @@ tested.
   container and nothing about its contents. Show the columns or keys, with
   units.
 - **A plausible wrong call exists.** Two parameters of the same type that
-  can be swapped, a value in MW where MWh is meant, a ratio that reads as a
+  can be swapped, a log-odds where a probability is meant, a ratio that reads as a
   percentage. The example is what rules the wrong reading out.
 - **The calling convention is not obvious.** A parameter that only does
   anything when another is set, an ordering requirement, a resource the

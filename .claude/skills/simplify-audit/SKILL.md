@@ -46,11 +46,9 @@ Source of Truth for Parameter Values** section.
 - **Runtime dependencies deserve attention.** An unused entry in
   `[project] dependencies` is installed by everything that runs this project.
   Check it against what is actually imported.
-- **`updates_python` and `updates_numba` are one function object, not two
-  implementations.** `sampler.py` decorates the same body, so the readable
-  reference and the compiled kernel cannot drift. Neither name is dead code,
-  and collapsing them would remove the ability to run the kernel as plain
-  Python under `NUMBA_DISABLE_JIT=1`.
+- **`updates_python` and `updates_numba` are not two implementations.**
+  Neither name is dead code and they must not be collapsed;
+  `python/ndcm/sampler.py`'s module docstring says why.
 - **The benchmark scripts hold slower paths on purpose.** Pure-Python and
   numba timings of the same kernel exist so a speedup is reported against an
   honest baseline. Do not report the slow one as dead.

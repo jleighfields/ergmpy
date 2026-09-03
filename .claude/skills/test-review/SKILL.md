@@ -111,7 +111,7 @@ red. Pick a canary whose failure is unambiguous — for example, an early
 WT=<the worktree path step 1 printed>
 [ -f "$WT/.git" ] || { echo "not a linked worktree — refusing to run"; exit 1; }
 cd "$WT"
-uv run python - "$WT/src/pkg/module.py" <<'PY'
+uv run python - "$WT/python/ndcm/module.py" <<'PY'
 import pathlib, sys
 p = pathlib.Path(sys.argv[1])
 t = p.read_text(encoding="utf-8", newline="")
@@ -215,7 +215,7 @@ the mutation could not be constructed goes in the scope statement.
 - **A mutation inside the numba kernel costs a recompile.** Editing
   `gibbs_updates` invalidates numba's on-disk cache, so the first call after
   each mutation pays compilation. Set `NUMBA_DISABLE_JIT=1` for the pass:
-  the decorated and undecorated versions are the same function object, so a
+  the decorated and undecorated versions come from one source definition, so a
   mutation is detected identically and each run starts immediately.
 - **A mutation a Monte Carlo test cannot detect is itself the finding.**
   Any assertion phrased as agreement within sampling error passes for a

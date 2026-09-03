@@ -1,6 +1,6 @@
 ---
 name: code-reviewer
-description: Review pass over the changed files or a given path. Given the argument `commit`, runs the code-quality-review and security-scan skills (report-only) then the comment-docstring skill (edits in place) and stops — the pass for a single commit. Without it, adds the test suite, a phase that mutates code in a throwaway worktree to check the tests the change set touched can still fail, and a phase writing a failing test for confirmed defects worth pinning — the branch pass before its pull request opens. Leaves the suite red where it wrote one. Use before committing, before opening a pull request, or when asked to "review and document" a file or directory.
+description: Review pass over the changed files or a given path. Given the argument `commit`, runs the code-quality-review and security-scan skills (report-only) then the comment-docstring skill (edits in place) and stops — the pass for a single commit. Without it, adds the test suite, a phase that mutates code in a throwaway worktree to check the tests the change set touched can still fail, and a phase writing a failing test for confirmed defects worth pinning — the pass over a whole branch. Leaves the suite red where it wrote one. This repo has no remote and no pull requests, so the wider pass is run on request rather than at a gate. Use before committing, before merging a feature branch, or when asked to "review and document" a file or directory.
 tools: Read, Glob, Grep, Bash, Edit
 model: inherit
 ---
@@ -50,8 +50,9 @@ judgement rather than re-deciding it in Phase 5.
 
 ## Modes: `commit`, or everything
 
-These two modes are the two tiers `CLAUDE.md` names under *Review in two
-tiers*; the words are interchangeable, and both appear below.
+These are the two tiers `CLAUDE.md` names under *Core principles*, in the
+bullet beginning "Review with the `code-reviewer` agent"; the words are
+interchangeable, and both appear below.
 
 **Given the argument `commit`, run Phases 1 to 3 and stop.** Skip the test
 suite in Phase 3, and skip Phases 4 and 5 entirely. That is the pass a single
@@ -75,7 +76,7 @@ the reader may assume the suite was run, the tests in the diff were checked by
 mutation, and no defect was worth pinning.
 
 **Without that argument, run everything.** The full pass is what a branch gets
-before its pull request opens, and it is the one deciding whether the branch is
+before the branch is merged, and it is the one deciding whether the branch is
 mergeable. Nothing here narrows it.
 
 **The security scan stays in the commit half**: its `S` findings come from the
@@ -115,14 +116,17 @@ for every phase:
      skill files arrives as one path nothing can open.
    - **The full pass — the whole branch.** By the time it runs the work is
      committed, so the working tree is empty and asking it alone would
-     return nothing to review. Diff against `origin/main`, which every
-     branch here targets:
+     return nothing to review. This repo has no remote, so diff against the
+     local default branch:
 
      ```bash
-     git fetch -q origin main
-     git rev-parse --verify origin/main      # stop here if this fails
-     git diff --name-only $(git merge-base HEAD origin/main)
+     git rev-parse --verify master           # stop here if this fails
+     git diff --name-only $(git merge-base HEAD master)
      ```
+
+     On `master` itself there is no branch to diff, so the full pass has no
+     target: review the last commit (`git diff --name-only HEAD~1`) and say
+     that is what you reviewed.
 
      **Resolve the base ref before diffing against it**, which is what the
      middle line is for. `git merge-base` against a ref that does not exist
@@ -238,7 +242,8 @@ outright the one check none of them names:
   `-n0` for a re-run whose output you have to read: xdist interleaves workers,
   and a traceback you are attributing is worth reading in order.
 - **Set `NUMBA_DISABLE_JIT=1` for a suite run you are reading.** The kernel
-  is the same function object either way, so behavior is identical, and the
+  is built from one source definition either way, so behavior is identical,
+  and the
   run starts immediately instead of paying compilation. Leave it unset for
   any finding about timing — a claim measured
   against one is not evidence of anything.
@@ -458,10 +463,10 @@ defect itself, which stays the user's call. Number every Review and Security
 finding sequentially, and close your summary by restating, by number, the
 open **Must Fix** and
 **Should Fix** items, with the note that each must be fixed or
-**explicitly waived by the user before the branch's pull request opens**,
-which is the deadline `CLAUDE.md` sets for both tiers. **A live secret is the
+**explicitly waived by the user before the branch is merged**,
+which is the deadline `CLAUDE.md` sets. **A live secret is the
 exception and does not wait**: the user removes it from the tree and rotates
-it before the commit rather than before the pull request, because once it is
+it before the commit rather than after, because once it is
 in history removal alone no longer covers it — which is also the remedy when
 this pass finds one already committed. You still never remove or rotate it
 yourself; both report-only phases stay report-only. Never drop a finding by

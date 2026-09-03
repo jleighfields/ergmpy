@@ -133,18 +133,11 @@ and this section describes only the fleet default.
   `S105-S107` hit under `tests/` as a configured exception — it is a
   **Must Fix**.
 
-## The `.env.example` caveat
-
-- **`.env.example` is supposed to be committed.** Do NOT flag it as a
-  tracked secret file. Instead, **open it and confirm every value is a
-  placeholder** — a real value leaked into the template IS a finding, and a
-  Must Fix.
-
 ## Repo-specific caveats
 
 - **There is no `.env` here and none is expected.** Nothing in this project
-  authenticates to anything: the cable population is generated in-process
-  from a seed, and no input is read from a remote service. `.gitignore`
+  authenticates to anything: every input is one of the two CSVs committed
+  under `reference/`, and nothing is read from a remote service. `.gitignore`
   covers the pattern defensively, so a tracked `.env` appearing is a real
   finding rather than the usual false positive, and there is no
   `.env.example` to audit.

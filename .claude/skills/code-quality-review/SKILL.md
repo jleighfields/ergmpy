@@ -58,9 +58,9 @@ shipped code: use what is there, then extend it, and only then write your own.
 Extending is often the right answer — a builder that takes one more argument
 serves the next review too.
 
-Say which you did. "Reused the `segment_table` fixture from
-`tests/conftest.py`" and "the suite had no builder for a repo in this state,
-so I built one" are both acceptable; building a ninth bespoke fixture beside
+Say which you did. "Reused the `ChoiceData` built by `ndcm.predict.load`"
+and "nothing existing produced a dataset in this state, so I built one" are
+both acceptable; building a ninth bespoke fixture beside
 eight existing ones is not, because the next reviewer then has nine to choose
 from and no reason to prefer any.
 
@@ -211,7 +211,7 @@ Must Fix.
   except a conventional loop index.
 - **Hollowed-out names** — an identifier that condensed a multi-word domain
   term until what is left names something else: `scale_*` for a scale
-  scale parameter, `factor` for the min-of-n reduction factor. The remainder
+  scale parameter, `statistic` for a named network statistic. The remainder
   is usually an ordinary word, so the name looks descriptive while pointing
   to the wrong concept. Report it with the full term and a
   suggested name, and stop there — renaming changes every caller, which is
@@ -249,13 +249,11 @@ Must Fix.
 - **Confusing comments** — comments that describe *what* instead of *why*.
 - **Missing comments** — complex logic without explanation.
 
-### Style (per CLAUDE.md)
+### Style
 
-- **Google-style docstrings** with summary, Args, Returns.
-- **`X | None`** syntax (not `Optional[X]`).
-- **Direct imports** for type hints (no forward references).
-- **No `_` prefix** on function names. Internal helpers still get
-  real names.
+`CLAUDE.md`'s **Code style** section is the authority, and ruff enforces the
+mechanical half of it (`D`, `ANN`, `UP`). Run ruff, treat its output as
+settled, and read for what it cannot see rather than re-deriving the list.
 
 ### Code duplication & helper functions
 
@@ -266,9 +264,9 @@ a **Should Fix** at 2 copies and a **Must Fix** at 3+.
   >50% of their logic with only minor parameter differences (e.g.
   different format strings, different column names). Extract the
   shared body into a parameterized helper and make the public
-  functions thin wrappers. Example: two policy scorers differing only in how
-  they rank should share a `score_candidates(segments, rank_by)` helper
-  rather than duplicating the scoring loop.
+  functions thin wrappers. Example: two estimators differing only in how they
+  build their design matrix should share one builder rather than duplicating
+  the loop that fills it.
 - **Repeated multi-line patterns across benchmark scripts** — if the same
   3+ line sequence appears in several (load the data → fit → compare against
   the recorded R output), extract it into a shared helper. Each script stays
@@ -308,32 +306,23 @@ radius:
 - **Should Fix** when the duplication is in diagnostics, charts, or
   tests and the values currently agree — drift is a matter of time.
 
-- **Compile-step duplication of a config dict** — one shape this bug takes,
-  and the one to check for first. A config dict plus a parallel mirror in a
-  runtime module, kept in sync by a `derive_*.py` / `compile_*.py` script
-  someone has to remember to rerun. **This pattern is itself the anti-pattern,
-  not an architecture that needs guardrails.** Editing the source dict without
-  rerunning the compile step silently diverges runtime behavior from what the
-  editor expected — no warning, no error, just wrong output.
-  Adding a startup assertion that compares the two dicts is **not** a fix:
-  the duplicate is still there; the assertion only catches the drift later.
-  **Must Fix. The correct
-  resolution is to delete the compile step and collapse to one dict** —
-  if the split was forced by a circular import, restructure the imports
-  (move shared constants into a leaf module) so the duplicate is not
-  needed. Challenge any new compile-step proposal on the same grounds.
-- **Hardcoded scalar where a config constant exists** — a literal in a
-  runtime module that also lives as a named constant in the config
-  module. Two sources for one value drift apart on the next edit. Fix:
-  read the config constant and delete the literal. Watch especially for
-  rates, factors, fallbacks, and unit-conversion constants.
-- **Module-level constant imported directly when a config field wraps
-  it** — one caller does `from ...config import SOME_MAP` while the
-  runtime path reads `cfg.some_map`. Per-instance overrides then reach
-  the runtime path but not the direct importer, so a scenario override
-  silently applies in one place and not the other. Fix: route both
-  through the config object, or document why one deliberately ignores
-  overrides.
+- **A formula written twice** — the case to check for first here. The
+  change statistic exists as an array expression in
+  `predict.change_statistics` and again as a scalar expression inside the
+  numba kernel, because a compiled kernel cannot call the array version.
+  That second copy is necessary, so the finding is never "collapse them" —
+  it is **a change to one that did not reach the other**. Must Fix, and the
+  check is to read both.
+- **Hardcoded scalar where a named constant exists** — a literal in one
+  module that also lives as a named constant in another. Two sources for one
+  value drift apart on the next edit. `TERM_NAMES` in both `mple.py` and
+  `mcmle.py` is the standing instance. Fix: import the one definition and
+  delete the copy.
+- **A sampling default written in two places** — `n_draws`, `burn_in`,
+  `thin` and `tolerance` are keyword defaults on the estimator that owns
+  them. A benchmark script restating one as its own literal is a finding:
+  the two drift, and the recorded measurement then names settings the
+  estimator no longer uses.
 - **Mismatched defaults across functions for the same logical value** —
   e.g. a config field defaulting to `"quarterly"` while a function
   signature defaults the same concept to `None`. A caller that omits
@@ -406,9 +395,9 @@ are an ordered hierarchy you walk until one solves the problem.
   the one exception. A third copy is a Must Fix — the formula is the whole
   correctness argument, and a divergence between copies would show up only as
   slightly wrong estimates.
-- **`updates_python` and `updates_numba` are one function object.** They are
-  not two implementations and must not be flagged as duplication, nor
-  collapsed — running the kernel undecorated is how it is checked.
+- **`updates_python` and `updates_numba` are not two implementations.** Do
+  not flag them as duplication; `python/ndcm/sampler.py`'s module docstring
+  says why.
 - **Estimator settings are keyword arguments, not globals.** A sampling knob
   read from a module-level constant is a source-of-truth finding. `TERM_NAMES`
   currently appears in both `mple.py` and `mcmle.py`; that is a real one.
@@ -493,8 +482,8 @@ Example layout:
 2. Run static checks on the changed files first — these surface
    issues mechanically before you start reading:
    - `uv run ruff check <changed-files>` — unused imports, undefined
-     names, style violations, marker for X | None vs Optional[X]
-     them cannot catch what CI rejects.
+     names, style violations, and the `X | None` vs `Optional[X]` marker.
+     Cite the rule code in each finding the way ruff prints it.
 
    **This skill does not run the test suite.** Whether the change set passes
    is a fact about the change, not a review finding, and its caller
@@ -551,7 +540,7 @@ user to review — never auto-fix.** But the findings are a tracked
 checklist, not advisory prose:
 
 - Treat each **Must Fix** and **Should Fix** as an open item referenced
-  by its number. Do **not** open the branch's pull request until every such
+  by its number. Do **not** merge the branch until every such
   item is either fixed or **explicitly waived by the user** — the deadline
   `CLAUDE.md` sets. A finding raised at the commit tier stays open until
   then rather than blocking that commit.
