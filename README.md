@@ -237,12 +237,11 @@ checked against, and the source of the term vocabulary used throughout
 The `network` package (Butts, 2008, *JSS* 24(2)) builds the bipartite objects
 the R baseline uses.
 
-Where this package is faster than `ergm`, that is not an improvement on their
-work. `ergm` is general across 176 terms and 31 constraints and reaches that
-generality through a proposal mechanism that toggles arbitrary ties; this
-implements one constraint and exploits it. The comparison measures a
-specialisation against a general tool, and the general tool is the harder
-thing to have built.
+The timings in this README compare a specialised implementation against a
+general one. `ergm` supports 176 terms and 31 constraints through a proposal
+mechanism that toggles arbitrary ties; `ergmpy` implements one constraint and
+uses its structure to make each move O(1). Read the numbers as a measurement
+of that specialisation on this model, not as a benchmark of the two packages.
 
 **Tools.** NumPy, SciPy, polars, numba, marimo, uv, ruff and pytest.
 
