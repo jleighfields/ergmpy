@@ -1,5 +1,6 @@
 # Converts the fitted ergm objects bench.R saved into the CSVs the Python
-# tests and benchmarks compare against.
+# tests and benchmarks compare against, plus a metadata table recording how
+# each fit was run.
 #
 # bench.R writes .rds files, which are gitignored -- they are large and
 # regenerable. The CSVs written here are small, are tracked, and are what
@@ -8,7 +9,7 @@
 #
 # Depends on bench.R having run first:
 #   cd results/r && FITS=star MAXIT_CAP=2 PRED_N=200 Rscript ../../benchmarks/r/bench.R
-#   cd results/r && FITS=star Rscript ../../benchmarks/r/bench.R      # converged
+#   cd results/r && FITS=star MAXIT=200 PRED_N=1 Rscript ../../benchmarks/r/bench.R
 #
 # Run from the repo root:  Rscript benchmarks/r/export_fits.R
 
@@ -16,25 +17,58 @@
 suppressMessages(library(ergm))
 
 OUT_DIR <- "results/r"
+metadata <- list()
 
-# Writes one fit's coefficient table, or says why it could not.
-export_coefficients <- function(rds, csv) {
+# Reads one fit and returns its coefficients plus a row describing the run.
+# ergm adapts MCMC.samplesize and MCMC.interval away from what control.ergm
+# requested, so the values recorded here are what the fit ended up using, not
+# what was asked for.
+export_fit <- function(rds, csv, phase) {
   path <- file.path(OUT_DIR, rds)
   if (!file.exists(path)) {
     cat(sprintf("SKIP %-28s (%s not found -- run bench.R first)\n", csv, rds))
-    return(invisible(FALSE))
+    return(NULL)
   }
-  s <- summary(readRDS(path))$coefficients
+  fit <- readRDS(path)
+  s <- summary(fit)$coefficients
   write.csv(data.frame(term = rownames(s), estimate = s[, 1], std_error = s[, 2]),
             file.path(OUT_DIR, csv), row.names = FALSE)
+
+  # bench.R records each phase's wall clock in timings.tsv.
+  seconds <- NA_real_
+  timings <- file.path(OUT_DIR, "timings.tsv")
+  if (file.exists(timings)) {
+    t <- read.delim(timings)
+    hit <- t$phase == phase
+    if (any(hit)) seconds <- t$seconds[which(hit)[1]]
+  }
+
   cat(sprintf("wrote %s\n", csv))
-  invisible(TRUE)
+  data.frame(
+    fit = sub("\\.csv$", "", csv),
+    maxit = fit$control$MCMLE.maxit,
+    iterations = fit$iterations,
+    # ergm stops early only when the estimating equations enter the tolerance
+    # region; reaching maxit means it did not.
+    converged = fit$iterations < fit$control$MCMLE.maxit,
+    seconds = seconds,
+    mcmc_samplesize = fit$control$MCMC.samplesize,
+    mcmc_interval = fit$control$MCMC.interval,
+    ergm_version = as.character(packageVersion("ergm"))
+  )
 }
 
-export_coefficients("fit_star_maxit2.rds", "coef_star_maxit2.csv")
-# Named for its iteration limit, not "converged": at maxit = 30 ergm reports
-# "MCMLE estimation did not converge after 30 iterations".
-export_coefficients("fit_star.rds", "mcmle_star_maxit30.csv")
+metadata[["star"]] <- export_fit("fit_star.rds", "mcmle_star.csv", "06_fit_star")
+metadata[["star_maxit2"]] <- export_fit("fit_star_maxit2.rds",
+                                        "coef_star_maxit2.csv", "06_fit_star")
+
+rows <- Filter(Negate(is.null), metadata)
+if (length(rows) > 0) {
+  table <- do.call(rbind, rows)
+  write.csv(table, file.path(OUT_DIR, "fit_metadata.csv"), row.names = FALSE)
+  cat("\nwrote fit_metadata.csv\n")
+  print(table, row.names = FALSE)
+}
 
 # The probability matrix is scored for only the first PRED_N customers, so the
 # rows beyond that are zero and the Python comparison reads just the scored ones.
@@ -45,6 +79,4 @@ if (file.exists(prob_path)) {
   write.csv(probabilities[seq_len(scored), ],
             file.path(OUT_DIR, "prob_star_maxit2_n200.csv"), row.names = FALSE)
   cat(sprintf("wrote prob_star_maxit2_n200.csv (%d scored customers)\n", scored))
-} else {
-  cat("SKIP prob_star_maxit2_n200.csv (prob_y_star_maxit2_n200.rds not found)\n")
 }

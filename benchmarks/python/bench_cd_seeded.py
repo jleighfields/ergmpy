@@ -29,8 +29,7 @@ def main() -> None:
     cd_s = time.perf_counter() - t0
 
     t0 = time.perf_counter()
-    result = mcmle.fit(data, seed, max_iterations=120, n_draws=600,
-                       burn_in=100, thin=30, tolerance=0.15)
+    result = mcmle.fit(data, seed)
     mcmle_s = time.perf_counter() - t0
 
     print(f"MPLE          {mple_s:7.1f} s   max|diff| {np.abs(start - R_COEF).max():.5f}")

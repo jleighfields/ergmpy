@@ -46,8 +46,7 @@ def main() -> None:
 
     for label, theta0 in [("MPLE-seeded", start), ("CD-seeded", seed)]:
         t0 = time.perf_counter()
-        result = mcmle.fit(data, theta0, max_iterations=120, n_draws=600,
-                           burn_in=100, thin=30, tolerance=0.15)
+        result = mcmle.fit(data, theta0)
         elapsed = time.perf_counter() - t0
         print(f"{label:>12} MCMLE: {result.n_iterations:3d} iterations, "
               f"{elapsed:6.1f} s, converged={result.converged}, "

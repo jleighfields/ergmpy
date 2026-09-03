@@ -26,12 +26,15 @@ References:
         Computational and Graphical Statistics, 21(4), 920-939.
 """
 
+from concurrent.futures import ProcessPoolExecutor
+
 import numpy as np
 import scipy.optimize
 from scipy.special import logsumexp
 
 from ergmpy import sampler
 from ergmpy.choice.predict import ChoiceData
+from ergmpy.convergence import effective_sample_size, within_confidence_region
 from ergmpy.convex_hull import shrink_into_ch
 
 TERM_NAMES = ("b2cov.V1", "b2cov.V2", "b2cov.V3", "b2factor.V4.2",
@@ -46,7 +49,9 @@ class MCMLEResult:
         std_error: (8,) standard errors from the inverse sample covariance.
         n_iterations: Outer iterations actually run.
         converged: Whether the convergence test passed before the cap.
-        history: One dict per iteration with its step length and gradient norm.
+        history: One dict per iteration recording its step length, the
+            confidence statistic and threshold, and the smallest effective
+            sample size across statistics.
     """
 
     def __init__(self, coef: np.ndarray, std_error: np.ndarray, n_iterations: int,
@@ -86,9 +91,10 @@ def observed_statistics(data: ChoiceData) -> np.ndarray:
                                       data.design, data.n_products)
 
 
-def simulate(data: ChoiceData, theta: np.ndarray, n_draws: int, burn_in: int,
-             thin: int, state: np.ndarray | None = None) -> tuple[np.ndarray, np.ndarray]:
-    """Draws network statistics from the model at theta.
+def simulate_chain(data: ChoiceData, theta: np.ndarray, n_draws: int,
+                   burn_in: int, thin: int, seed: int,
+                   state: np.ndarray | None = None) -> tuple[np.ndarray, np.ndarray]:
+    """Draws network statistics from one chain at theta.
 
     Args:
         data: The dataset defining choice sets and product attributes.
@@ -96,12 +102,14 @@ def simulate(data: ChoiceData, theta: np.ndarray, n_draws: int, burn_in: int,
         n_draws: Number of retained draws.
         burn_in: Sweeps discarded before the first draw.
         thin: Sweeps between retained draws.
+        seed: Seed for this chain's random stream.
         state: Optional (n_customers,) starting configuration; defaults to the
             observed purchases, which is ergm's own starting point.
 
     Returns:
         The (n_draws, 8) statistics and the final configuration.
     """
+    np.random.seed(seed)
     choice_sets = np.ascontiguousarray(data.choice_sets)
     current = (data.chosen if state is None else state).astype(np.int32).copy()
     degree = np.bincount(current, minlength=data.n_products).astype(np.int64)
@@ -115,6 +123,51 @@ def simulate(data: ChoiceData, theta: np.ndarray, n_draws: int, burn_in: int,
         draws[m] = sampler.network_statistics(choice_sets, current, data.design,
                                               data.n_products)
     return draws, current
+
+
+def simulate(data: ChoiceData, theta: np.ndarray, n_draws: int, burn_in: int,
+             thin: int, state: np.ndarray | None = None, n_chains: int = 1,
+             seed: int = 123) -> tuple[np.ndarray, np.ndarray]:
+    """Draws network statistics from the model at theta, over one or more chains.
+
+    Chains are independent, which is the axis `ergm` parallelises too -- the R
+    script runs `parallel = 4` and splits its sample size across four workers.
+    The draws are returned chain-major, so the convergence test can take batch
+    means within a chain rather than across the join between two.
+
+    Each chain is seeded from `seed` and its index, so a run reproduces
+    regardless of how the work is scheduled.
+
+    Args:
+        data: The dataset defining choice sets and product attributes.
+        theta: (8,) parameter vector to simulate at.
+        n_draws: Total retained draws, divided among the chains.
+        burn_in: Sweeps discarded before the first draw of each chain.
+        thin: Sweeps between retained draws.
+        state: Optional starting configuration, used by every chain.
+        n_chains: Independent chains to run, in that many worker processes.
+        seed: Base seed; chain i uses seed + i.
+
+    Returns:
+        The (n_draws, 8) statistics, chain-major, and one final configuration.
+    """
+    if n_chains == 1:
+        return simulate_chain(data, theta, n_draws, burn_in, thin, seed, state)
+
+    per_chain = n_draws // n_chains
+    if per_chain < 1:
+        raise ValueError(f"{n_draws} draws cannot be split across {n_chains} chains")
+
+    with ProcessPoolExecutor(max_workers=n_chains) as pool:
+        futures = [
+            pool.submit(simulate_chain, data, theta, per_chain, burn_in, thin,
+                        seed + index, state)
+            for index in range(n_chains)
+        ]
+        results = [f.result() for f in futures]
+
+    draws = np.vstack([draw for draw, _ in results])
+    return draws, results[-1][1]
 
 
 def geyer_thompson_step(theta_t: np.ndarray, draws: np.ndarray,
@@ -170,26 +223,44 @@ def geyer_thompson_step(theta_t: np.ndarray, draws: np.ndarray,
     return theta_t + delta
 
 
-def fit(data: ChoiceData, theta0: np.ndarray, max_iterations: int = 30,
-        n_draws: int = 1250, burn_in: int = 200, thin: int = 200,
-        tolerance: float = 0.05, seed: int = 123) -> MCMLEResult:
+def fit(data: ChoiceData, theta0: np.ndarray, max_iterations: int = 200,
+        n_draws: int = 1250, burn_in: int = 1600, thin: int = 200,
+        confidence: float = 0.99, n_chains: int = 4,
+        seed: int = 123) -> MCMLEResult:
     """Fits the model by Monte Carlo maximum likelihood.
+
+    Stops on the same criterion `ergm` uses -- `MCMLE.termination =
+    "confidence"` at `MCMLE.confidence = 0.99` -- asking whether the observed
+    statistics lie inside a joint confidence region around the simulated mean,
+    with the covariance of that mean estimated by batch means so the chain's
+    autocorrelation is accounted for.
+
+    The defaults match what the reference R script asks `control.ergm` for,
+    converted from proposals to sweeps at 5,000 proposals per sweep: its
+    `MCMC.samplesize = 1250`, `MCMC.interval = 1e6` (200 sweeps),
+    `MCMC.burnin = 8e6` (1,600 sweeps), `parallel = 4`, `seed = 123`, and
+    `MCMLE.maxit = 200` as its published output reports.
+
+    One difference is not reconcilable by settings: `ergm` targets an effective
+    sample size of 64 per iteration (`MCMLE.effectiveSize`) and adapts its
+    sample size and interval upward to reach it, so its per-iteration effort
+    varies. This takes the requested settings as given and does not adapt, and
+    records the effective sample size it achieved in `history` instead.
 
     Args:
         data: The dataset to fit.
-        theta0: (8,) starting parameter, normally the pseudo-likelihood estimate.
-        max_iterations: Cap on outer iterations.
-        n_draws: Retained draws per iteration.
-        burn_in: Sweeps discarded before the first draw of each iteration.
+        theta0: (8,) starting parameter, normally a contrastive-divergence seed.
+        max_iterations: Cap on outer iterations, matching `MCMLE.maxit`.
+        n_draws: Retained draws per iteration, divided among the chains.
+        burn_in: Sweeps discarded before the first draw of each chain.
         thin: Sweeps between retained draws.
-        tolerance: Convergence threshold on the largest standardized gap between
-            observed and simulated mean statistics.
-        seed: Seed for the sampler's random stream.
+        confidence: Level of the joint region, matching `MCMLE.confidence`.
+        n_chains: Independent chains per iteration; the R script uses 4.
+        seed: Base seed for the sampler.
 
     Returns:
         The fitted MCMLEResult.
     """
-    np.random.seed(seed)
     g_obs = observed_statistics(data)
     theta = np.asarray(theta0, dtype=float).copy()
     state = None
@@ -197,28 +268,29 @@ def fit(data: ChoiceData, theta0: np.ndarray, max_iterations: int = 30,
     converged = False
 
     for iteration in range(1, max_iterations + 1):
-        draws, state = simulate(data, theta, n_draws, burn_in, thin, state)
-        mean = draws.mean(axis=0)
-        spread = draws.std(axis=0)
-        # Statistics that never move carry no information and would divide by
-        # zero here; ergm reports the same situation as "not varying".
-        varying = spread > 1e-12
-        gap = np.zeros_like(spread)
-        gap[varying] = np.abs(g_obs - mean)[varying] / spread[varying]
+        draws, state = simulate(data, theta, n_draws, burn_in, thin, state,
+                                n_chains=n_chains, seed=seed + 1000 * iteration)
+        inside, statistic, threshold = within_confidence_region(
+            g_obs, draws, confidence, n_chains=n_chains
+        )
+        smallest_ess = float(effective_sample_size(draws, n_chains=n_chains).min())
 
-        if gap.max() < tolerance:
+        if inside:
             converged = True
             history.append({"iteration": iteration, "step_length": 1.0,
-                            "max_standardized_gap": float(gap.max())})
+                            "statistic": statistic, "threshold": threshold,
+                            "min_ess": smallest_ess})
             break
 
         gamma = min(1.0, shrink_into_ch(g_obs, draws))
-        target = gamma * g_obs + (1.0 - gamma) * mean
+        target = gamma * g_obs + (1.0 - gamma) * draws.mean(axis=0)
         theta = geyer_thompson_step(theta, draws, target)
         history.append({"iteration": iteration, "step_length": float(gamma),
-                        "max_standardized_gap": float(gap.max())})
+                        "statistic": statistic, "threshold": threshold,
+                        "min_ess": smallest_ess})
 
-    draws, _ = simulate(data, theta, n_draws, burn_in, thin, state)
+    draws, _ = simulate(data, theta, n_draws, burn_in, thin, state,
+                        n_chains=n_chains, seed=seed)
     covariance = np.cov(draws, rowvar=False)
     std_error = np.sqrt(np.diag(np.linalg.pinv(covariance)))
     return MCMLEResult(theta, std_error, len(history), converged, history)

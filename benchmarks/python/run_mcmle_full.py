@@ -23,8 +23,7 @@ def main() -> None:
     start = mple.fit(data).coef
 
     t0 = time.perf_counter()
-    result = mcmle.fit(data, start, max_iterations=120, n_draws=600,
-                       burn_in=100, thin=30, tolerance=0.15)
+    result = mcmle.fit(data, start)
     elapsed = time.perf_counter() - t0
 
     print(f"===== Python MCMLE — {elapsed:.1f} s, {result.n_iterations} iterations, "
