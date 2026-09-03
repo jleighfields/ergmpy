@@ -58,7 +58,7 @@ shipped code: use what is there, then extend it, and only then write your own.
 Extending is often the right answer — a builder that takes one more argument
 serves the next review too.
 
-Say which you did. "Reused the `ChoiceData` built by `ndcm.predict.load`"
+Say which you did. "Reused the `ChoiceData` built by `ergmpy.choice.predict.load`"
 and "nothing existing produced a dataset in this state, so I built one" are
 both acceptable; building a ninth bespoke fixture beside
 eight existing ones is not, because the next reviewer then has nine to choose
@@ -396,12 +396,12 @@ are an ordered hierarchy you walk until one solves the problem.
   correctness argument, and a divergence between copies would show up only as
   slightly wrong estimates.
 - **`updates_python` and `updates_numba` are not two implementations.** Do
-  not flag them as duplication; `python/ndcm/sampler.py`'s module docstring
+  not flag them as duplication; `python/ergmpy/sampler.py`'s module docstring
   says why.
 - **Estimator settings are keyword arguments, not globals.** A sampling knob
   read from a module-level constant is a source-of-truth finding. `TERM_NAMES`
   currently appears in both `mple.py` and `mcmle.py`; that is a real one.
-- **Benchmarks import from `ndcm` and define no modeling logic.** A function
+- **Benchmarks import from `ergmpy` and define no modeling logic.** A function
   in `benchmarks/` that computes a statistic, a probability or an estimate
   belongs in the package; report it with the module it should move to.
 

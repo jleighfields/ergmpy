@@ -13,7 +13,7 @@ import polars as pl
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "python"))
-from ndcm.predict import choice_probabilities, load, top_n_accuracy  # noqa: E402
+from ergmpy.choice.predict import choice_probabilities, load, top_n_accuracy  # noqa: E402
 
 R_RESULTS = ROOT / "results" / "r"
 N_COMPARED = 200  # R's saved matrix only has rows for the customers it scored

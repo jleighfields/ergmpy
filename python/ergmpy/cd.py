@@ -13,16 +13,16 @@ and takes only a few single-customer updates. The resulting gradient is biased,
 so it is not an estimator to report, but it cannot run away, and it lands close
 enough to seed MCMLE.
 
-The step machinery is shared with `ndcm.mcmle` rather than duplicated -- only
+The step machinery is shared with `ergmpy.mcmle` rather than duplicated -- only
 how the draws are generated differs.
 """
 
 import numpy as np
 
-from ndcm import sampler
-from ndcm.convex_hull import shrink_into_ch
-from ndcm.mcmle import geyer_thompson_step, observed_statistics
-from ndcm.predict import ChoiceData
+from ergmpy import sampler
+from ergmpy.choice.predict import ChoiceData
+from ergmpy.convex_hull import shrink_into_ch
+from ergmpy.mcmle import geyer_thompson_step, observed_statistics
 
 
 def draw_statistics(data: ChoiceData, theta: np.ndarray, n_draws: int,

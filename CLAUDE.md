@@ -5,15 +5,21 @@ instructions are edited in place and there are no sidecar files.
 
 ## Orientation
 
-- **What this is:** a Python implementation of the bipartite-ERGM discrete
-  choice model from Sha et al. (2023), "A network-based discrete choice model
-  for decision-based design," *Design Science* 9, e7. The authors published R
-  scripts driving the `ergm` package; this reimplements the model so it can be
-  fitted, simulated and predicted from Python.
+- **What this is:** ERGMs on constrained sample spaces, in Python. The
+  estimation core is model-agnostic; `ergmpy.choice` is the first constraint
+  implemented, the bipartite discrete choice model of Sha et al. (2023),
+  "A network-based discrete choice model for decision-based design,"
+  *Design Science* 9, e7.
+- **The contribution is the specialised sampler, not term coverage.** `ergm`
+  has 176 terms and 31 constraints; this has three term families and one.
+  Where it wins is exploiting the constraint to make a Gibbs move O(1) rather
+  than proposing arbitrary tie toggles. Do not let the package drift toward
+  chasing `ergm`'s catalogue.
 - **R is the oracle, not a dependency.** `ergm` produces the numbers every
-  Python component is checked against. Nothing in `python/ndcm/` calls R, and
+  Python component is checked against. Nothing in `python/ergmpy/` calls R, and
   the package must stay installable without it.
-- **Where things live:** `python/ndcm/` is the implementation,
+- **Where things live:** `python/ergmpy/` is the estimation core with
+  `choice/` holding the first constrained model,
   `benchmarks/python/` the scripts that time it and check it against R,
   `benchmarks/r/` the instrumented copy of the authors' script, `results/`
   the measurements both produce, and `rlib/` a locally built R library that

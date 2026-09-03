@@ -22,9 +22,9 @@ import numpy as np
 import scipy.optimize
 from scipy.special import logsumexp
 
-from ndcm import sampler
-from ndcm.convex_hull import shrink_into_ch
-from ndcm.predict import ChoiceData
+from ergmpy import sampler
+from ergmpy.choice.predict import ChoiceData
+from ergmpy.convex_hull import shrink_into_ch
 
 TERM_NAMES = ("b2cov.V1", "b2cov.V2", "b2cov.V3", "b2factor.V4.2",
               "b2factor.V4.3", "b2factor.V4.4", "b2factor.V4.5", "b2star2")

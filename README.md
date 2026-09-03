@@ -1,14 +1,36 @@
-# network-choice
+# ergmpy
 
-A Python implementation of the bipartite-ERGM discrete choice model from
-Sha et al. (2023), "A network-based discrete choice model for decision-based
-design," *Design Science* 9, e7. The authors published R scripts driving the
-`ergm` package; this reimplements the model so it can be fitted, simulated and
-predicted from Python, and checks every component against `ergm`'s own output.
+Exponential-random-graph models on **constrained sample spaces**, in Python,
+checked against the `ergm` R package.
+
+## What this is, and is not
+
+Not a port of `ergm`. That package carries 176 terms, 31 constraints, 18
+proposals and 4 references; this implements **three term families and one
+constraint**, and has no ambition to close that gap.
+
+What it does instead is exploit the constraint. `ergm` reaches its generality
+through a proposal mechanism that toggles arbitrary ties. When the constraint
+already says what a valid configuration looks like, a Gibbs move can be O(1) in
+the change statistics rather than a network traversal — which is why the fit
+below takes 94.8 s single-threaded against `ergm`'s 781.8 s on four cores, at
+matching estimates.
+
+The estimation core (`sampler`, `mcmle`, `cd`, `convex_hull`) is not specific
+to any model: importance-sampled maximum likelihood with the Hummel step
+length, seeded by contrastive divergence. `ergmpy.choice` is the first
+constraint implemented — the bipartite discrete choice model of Sha et al.
+(2023), "A network-based discrete choice model for decision-based design,"
+*Design Science* 9, e7, whose data and reference implementation are reproduced
+under `reference/` with the authors' citation terms.
+
+Adding a constraint means writing its change statistics and its Gibbs move.
+The estimation core does not change.
 
 ## Layout
 
-- `python/ndcm/` — the implementation.
+- `python/ergmpy/` — the estimation core, with `choice/` holding the
+  first constrained model.
 - `benchmarks/python/` — scripts that time it and check it against R.
 - `benchmarks/r/` — the R baseline. `bench.R` is the authors'
   `Code_choice_set_6.R` with identical model and control settings, wrapped in
@@ -41,7 +63,7 @@ any reimplementation.
 uv sync --group dev
 ```
 
-That installs `ndcm` as an editable package, so `import ndcm` works from
+That installs `ergmpy` as an editable package, so `import ergmpy` works from
 anywhere without a path insert.
 
 | Command | What it does |
@@ -100,7 +122,7 @@ it.
 `ergm`'s own `estimate = "MPLE"` returns linear coefficients whose signs
 contradict its MCMLE fit on this model, and warns that the GLM may be
 separable. It forms its pseudo-likelihood dyad by dyad, which drops the
-one-purchase-per-customer constraint; `ndcm.mple` conditions on the other
+one-purchase-per-customer constraint; `ergmpy.choice.mple` conditions on the other
 customers instead, leaving a multinomial choice over each consideration set.
 
 The `b2degrange(25)` specification does not estimate: `ergm` reports

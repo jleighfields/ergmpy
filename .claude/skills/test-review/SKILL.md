@@ -111,7 +111,7 @@ red. Pick a canary whose failure is unambiguous — for example, an early
 WT=<the worktree path step 1 printed>
 [ -f "$WT/.git" ] || { echo "not a linked worktree — refusing to run"; exit 1; }
 cd "$WT"
-uv run python - "$WT/python/ndcm/module.py" <<'PY'
+uv run python - "$WT/python/ergmpy/module.py" <<'PY'
 import pathlib, sys
 p = pathlib.Path(sys.argv[1])
 t = p.read_text(encoding="utf-8", newline="")

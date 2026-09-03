@@ -12,8 +12,8 @@ import numpy as np
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "python"))
-from ndcm import mple  # noqa: E402
-from ndcm.predict import choice_probabilities, load, top_n_accuracy  # noqa: E402
+from ergmpy.choice import mple  # noqa: E402
+from ergmpy.choice.predict import choice_probabilities, load, top_n_accuracy  # noqa: E402
 
 # ergm MCMLE, star model, from the authors' published screenshot (maxit = 200).
 PUBLISHED = {
@@ -34,7 +34,7 @@ def check_hessian(result, data) -> float:
     Returns:
         The largest relative discrepancy across all entries.
     """
-    from ndcm.predict import change_statistics
+    from ergmpy.choice.predict import change_statistics
     Z = change_statistics(data)
     slot = np.argmax(data.choice_sets == data.chosen[:, None], axis=1)
     step = 1e-5
