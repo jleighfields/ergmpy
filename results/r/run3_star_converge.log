@@ -156,3 +156,106 @@ Iteration 24 of at most 30:
 The log-likelihood improved by 0.7532.
 Estimating equations are not within tolerance region.
 Iteration 25 of at most 30:
+1 Optimizing with step length 1.0000.
+The log-likelihood improved by 0.2474.
+Estimating equations are not within tolerance region.
+Iteration 26 of at most 30:
+1 Optimizing with step length 1.0000.
+The log-likelihood improved by 0.1786.
+Estimating equations are not within tolerance region.
+Iteration 27 of at most 30:
+1 Optimizing with step length 1.0000.
+The log-likelihood improved by 0.2499.
+Estimating equations are not within tolerance region.
+Iteration 28 of at most 30:
+1 Optimizing with step length 1.0000.
+The log-likelihood improved by 0.2109.
+Estimating equations are not within tolerance region.
+Iteration 29 of at most 30:
+1 Optimizing with step length 1.0000.
+The log-likelihood improved by 0.1622.
+Estimating equations are not within tolerance region.
+Iteration 30 of at most 30:
+1 Optimizing with step length 1.0000.
+The log-likelihood improved by 0.0380.
+Convergence test p-value: 0.5755. Not converged with 99% confidence; increasing sample size.
+MCMLE estimation did not converge after 30 iterations. The estimated coefficients may not be accurate. Estimation may be resumed by passing the coefficients as initial values; see 'init' under ?control.ergm for details.
+Finished MCMLE.
+This model was fit using MCMC.  To examine model diagnostics and check
+for degeneracy, use the mcmc.diagnostics() function.
+[14:51:02] 06_fit_star: 781.75 s
+Call:
+ergm(formula = net_purchase ~ edges + offset(edgecov(mat_inv)) + 
+    b2cov("V1") + b2cov("V2") + b2cov("V3") + b2factor("V4") + 
+    b2star(2), constraints = ~b1degrees, offset.coef = -Inf, 
+    eval.loglik = FALSE, control = CTRL(30))
+
+Monte Carlo Maximum Likelihood Results:
+
+                          Estimate Std. Error MCMC % z value Pr(>|z|)    
+edges                    0.0000000  0.0000000      0     NaN      NaN    
+offset(edgecov.mat_inv)       -Inf  0.0000000      0    -Inf   <1e-04 ***
+b2cov.V1                -3.0451052  0.1007882      0  -30.21   <1e-04 ***
+b2cov.V2                -0.0358261  0.0483922      0   -0.74    0.459    
+b2cov.V3                 1.5947824  0.0727808      0   21.91   <1e-04 ***
+b2factor.V4.2            1.2249765  0.0601395      0   20.37   <1e-04 ***
+b2factor.V4.3            2.2061539  0.0721820      0   30.56   <1e-04 ***
+b2factor.V4.4            1.2193177  0.0639832      0   19.06   <1e-04 ***
+b2factor.V4.5            1.1847269  0.0790112      0   14.99   <1e-04 ***
+b2star2                  0.0058188  0.0001343      1   43.31   <1e-04 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Log-likelihood was not estimated for this fit. To get deviances, AIC, and/or BIC, use ‘*fit* <-logLik(*fit*, add=TRUE)’ to add it to the object or rerun this function with eval.loglik=TRUE.
+
+ The following terms are fixed by offset and are not estimated:
+   `offset(edgecov.mat_inv)` 
+ 
+Warnings:
+
+ * The following terms could not be estimated because they conflicted
+   with the sample space constraint:
+
+   edges
+Warning message:
+In ergm.checkconstraints.model(model, proposal, control$init) :
+  The specified model's sample space constraint holds statistic(s) edges  constant. They will be ignored.
+[14:51:02] 08_read_test_csv: 0.06 s
+[14:51:06] 09_make_network_test: 3.82 s
+Model and/or observational constraints are not dyad-independent. Dyad imputation cannot be used. Please ensure your LHS network satisfies all constraints.
+Starting contrastive divergence estimation via CD-MCMLE:
+Iteration 1 of at most 60:
+Convergence test P-value:7e-13
+1 The log-likelihood improved by 0.05913.
+Iteration 2 of at most 60:
+Convergence test P-value:4.6e-03
+1 The log-likelihood improved by 0.01458.
+Iteration 3 of at most 60:
+Convergence test P-value:1.9e-01
+1 The log-likelihood improved by 0.006349.
+Iteration 4 of at most 60:
+Convergence test P-value:6.6e-01
+Convergence detected. Stopping.
+1 The log-likelihood improved by 0.003383.
+Finished CD.
+Starting Monte Carlo maximum likelihood estimation (MCMLE):
+Iteration 1 of at most 1:
+1 Optimizing with step length 0.0288.
+The log-likelihood improved by 4.0257.
+Estimating equations are not within tolerance region.
+MCMLE estimation did not converge after 1 iterations. The estimated coefficients may not be accurate. Estimation may be resumed by passing the coefficients as initial values; see 'init' under ?control.ergm for details.
+Finished MCMLE.
+This model was fit using MCMC.  To examine model diagnostics and check
+for degeneracy, use the mcmc.diagnostics() function.
+[14:54:45] 10_fit_test_structure_1iter: 216.35 s
+Warning message:
+In ergm.checkconstraints.model(model, proposal, control$init) :
+  The specified model's sample space constraint holds statistic(s) edges  constant. They will be ignored.
+[14:54:45] 11_prediction_loop: 0.74 s
+NULL
+Warning message:
+In .Deprecate_once(msg = "Using x$coef to access the coefficient vector of an ergm is deprecated. Use coef(x) instead.") :
+  Using x$coef to access the coefficient vector of an ergm is deprecated. Use coef(x) instead.
+[14:54:45] 12_topn_eval: 0.01 s
+NULL
+top-3 accuracy: 1 

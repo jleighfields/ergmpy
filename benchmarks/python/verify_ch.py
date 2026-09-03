@@ -1,10 +1,13 @@
-"""Checks ch_shrink.shrink_into_ch against ergm's shrink_into_CH on saved cases."""
+"""Checks ndcm.convex_hull against ergm's shrink_into_CH on saved cases."""
 
+import sys
 import time
 from pathlib import Path
 
 import numpy as np
-from ch_shrink import shrink_into_ch
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "python"))
+from ndcm.convex_hull import shrink_into_ch  # noqa: E402
 
 R_GAMMA = {1: 0.5003023501, 2: 22.1831136834, 3: 0.1876695020,
            4: 21.2571901294, 5: 0.1327143535, 6: 51.8217094913}
