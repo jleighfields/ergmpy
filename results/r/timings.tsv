@@ -2,3 +2,6 @@ phase	seconds
 01_read_train_csv	0.05
 02_make_network_train	5.16
 03_plot_networks	9.41
+06_fit_star	1026.98
+08_read_test_csv	0.05
+09_make_network_test	4.07

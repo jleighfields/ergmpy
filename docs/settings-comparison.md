@@ -13,6 +13,8 @@ object by `benchmarks/r/export_control_settings.R`, and the signature of
 | Setting | `ergm` | `ergmpy` |
 |---|---|---|
 | Outer iteration cap | `MCMLE.maxit = 200` | `max_iterations = 200` |
+| Effective sample size target | `MCMLE.effectiveSize = 64` | `target_ess = 64`, lengthening the interval when short |
+| Step-length margin | `MCMLE.steplength.margin = 0.05` | `step_margin = 0.05` |
 | Draws retained per iteration | `MCMC.samplesize = 1250` | `n_draws = 1250` |
 | Between retained draws | `MCMC.interval = 1e6` proposals | `thin = 200` sweeps |
 | Discarded before first draw | `MCMC.burnin = 8e6` proposals | `burn_in = 1600` sweeps |
@@ -24,20 +26,20 @@ object by `benchmarks/r/export_control_settings.R`, and the signature of
 
 ## Not matched, and why
 
+
 | Setting | `ergm` | `ergmpy` | Why |
 |---|---|---|---|
-| Effective sample size target | `MCMLE.effectiveSize = 64`, adapting sample size and interval upward to reach it | none; takes the requested settings as given | `ergm` therefore does more work per iteration than it was asked for — the maxit=2 fit adapted `MCMC.interval` from 1e6 down to 250,000 and the maxit=30 fit ran `samplesize = 1768`. `ergmpy` records the effective sample size it achieved in `history` rather than steering to a target. |
-| Step-length margin | `MCMLE.steplength.margin = 0.05` | none | `ergm` shrinks slightly inside the hull rather than to its boundary. `ergmpy` steps to the boundary. |
-| Contrastive divergence | `CD.nsteps = 8` proposals per draw | `n_updates = 50000` customer updates | The two implementations differ in what a step is: `ergm` proposes dyad toggles, `ergmpy` resamples one customer's purchase. Matching the count would not match the work. CD only seeds MCMLE in both, and both then run the same MCMLE. |
+| Contrastive divergence | `CD.nsteps = 8` steps per draw | `n_updates = 50000` | Same unit — under this constraint `ergm` proposes with `CondB1Degree`, which moves one customer's edge, exactly what `n_updates` counts. But matching the *number* does not match the behaviour: at `n_updates = 8` this implementation is inert at any draw count (measured: 0.90 from a start of 1.19 at 300 draws, and no movement at all at 40,000). Its objective needs the draws to move appreciably before the gradient is non-zero, where `ergm`'s extracts signal from much smaller perturbations. This is a difference in how the two CD objectives are formulated, not in settings. |
+
+CD only produces a starting point; both implementations then run the same
+MCMLE under the matched settings above, so a difference in seeds does not
+propagate into the estimates. The seed each produced is recorded with the run.
 
 ## What this means for a timing comparison
 
-The two are doing comparable work per iteration under the matched settings,
-with one asymmetry: `ergm`'s effective-sample-size target makes it sample more
-than requested when the chain mixes poorly, and `ergmpy` does not. So a
-per-iteration timing favours `ergmpy` by an amount that depends on how far
-`ergm` had to adapt, which `results/r/fit_metadata.csv` records for each run.
-
-Iteration counts are not comparable at all unless the effective sample sizes
-are, for the same reason: a criterion evaluated on a larger sample is met
-sooner in iterations and later in total sampling.
+Under the matched settings the two do comparable work per iteration, and both
+adapt the interval upward when a draw falls short of an effective sample size
+of 64. `results/r/fit_metadata.csv` records what `ergm` ended up using, and
+each `ergmpy` iteration records its own interval and achieved effective sample
+size in `history`, so a timing can be checked against the effort behind it
+rather than assumed comparable.
