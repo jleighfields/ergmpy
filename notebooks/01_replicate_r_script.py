@@ -408,7 +408,8 @@ def _(mo):
 
 @app.cell
 def _(mple_fit, run_full_fit, time, train):
-    from ergmpy import cd, mcmle
+    from ergmpy import contrastive_divergence as cd
+    from ergmpy import mcmle
 
     if run_full_fit.value:
         fit_start = time.perf_counter()
@@ -461,11 +462,16 @@ def _(ROOT, mcmle_fit, mo, np, pl):
 def _(mo):
     mo.md(
         r"""
-        Two caveats on reading any timing next to `ergm`'s. The R fit ran with
-        `parallel = 4` and drew roughly 14× more sweeps per iteration than the
-        Python one, so the wall-clock ratio mixes a real speedup with a settings
-        difference. And these are Monte Carlo estimates — two independent runs of
-        the *same* implementation differ by a similar amount.
+        Two things to keep in view when reading a timing next to `ergm`'s.
+
+        Both run four chains under the same settings and the same stopping
+        rule, but they get there differently: `ergm` took 34 cheap iterations
+        of about 58,000 sweeps, this took 3 expensive ones of 250,000. Total
+        sampling differs by 2.6× where the iteration count differs by 11×, so
+        the iteration counts do not mean what they appear to on their own.
+
+        And these are Monte Carlo estimates — two runs of the *same*
+        implementation differ by about as much as the two implementations do.
         """
     )
     return

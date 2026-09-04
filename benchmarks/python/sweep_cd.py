@@ -10,7 +10,7 @@ from pathlib import Path
 
 import numpy as np
 
-from ergmpy import cd
+from ergmpy import contrastive_divergence as cd
 from ergmpy.choice import mple
 from ergmpy.choice.predict import load
 

@@ -30,48 +30,61 @@ why the estimation here is cheap.
 
 ## What the recreation reproduces
 
+Both sides run the same settings, the same stopping rule and four chains. What
+matches and what does not is set out in
+[`docs/settings-comparison.md`](docs/settings-comparison.md); the settings
+themselves live on one object that names each `control.ergm` parameter it
+mirrors.
+
 | Stage | Agreement with `ergm` | Source |
 |---|---|---|
 | Choice probabilities | 2.7e-13 against R's saved matrix | `verify_predict.py` |
 | Convex-hull shrink factor | 2.2e-10 against `shrink_into_CH` | `verify_ch.py` |
 | Gibbs sampler | reproduces the observed statistics to 0.121 sd when simulating at `ergm`'s published estimates | `results/python/sampler_at_published_theta.log` |
-| MCMLE coefficients, CD-seeded | 0.0043 | `results/python/full_recipe_mple_cd_mcmle.log` |
-| MCMLE coefficients, MPLE-seeded | 0.0089, standard errors within 4% | `results/python/mcmle_star_from_mple.log` |
+| MCMLE coefficients | 0.0045 | `results/python/matched_settings_fit.log` |
+| MCMLE standard errors | within 5.0% | same |
 
-The two MCMLE rows compare against `results/r/mcmle_star_maxit30.csv` — the R
-script's own setting for the star model. The authors' published output used
-`MCMLE.maxit = 200` instead, so the committed script and the published figures
-do not match. At 30, ergm reports that the fit did not converge; the
-coefficients still land within about 0.01 of the published ones. Pass
-`MAXIT=200` to `bench.R` to reproduce the published setting.
+The reference is `ergm` at `MCMLE.maxit = 200`, the setting the authors'
+published output reports. It converged after 34 iterations —
+`results/r/fit_metadata.csv` records that, along with the sample size and
+interval it adapted to. Their committed script sets 30 instead, at which
+`ergm` reports the fit did not converge.
 
-Timings, for reference rather than as a benchmark:
+### Cost
 
-| | Python | R |
+| | `ergm` | `ergmpy` |
 |---|---|---|
-| Full fit (MPLE → CD → MCMLE) | 94.8 s, 1 core | 781.8 s, 4 cores |
-| Choice probabilities, 5,000 customers | 1.4 ms | ~62 min (projected from 148.95 s for 200) |
-| Convex-hull shrink factor, per case | 1.4–7.0 ms | 1–9 ms |
+| Wall clock, star fit | 1,027 s | 119 s |
+| Cores | 4 | 4 chains |
+| MCMLE iterations | 34 | 3 |
+| Sweeps per iteration | 58,450 | 250,000 |
+| **Total sampling** | **1,987,300 sweeps** | **750,000 sweeps** |
 
-The three rows measure different things.
+Read the iteration counts together with the sweeps, not on their own. `ergm`
+takes many cheap iterations and `ergmpy` takes few expensive ones, both
+chasing the same effective-sample-size target, so total sampling differs by
+2.6× where the iteration count differs by 11×. Per sweep the two are within
+about 4× of one another.
 
-The first is not equal work, and neither side's stopping rule is the other's.
-R drew about 250,000 sweeps per MCMLE iteration against Python's 18,100. R ran
-to its iteration limit of 30 and reported "MCMLE estimation did not converge";
-Python stopped after 3 CD-seeded iterations having met a tolerance of 0.15 on
-the largest standardized gap. The estimates agree to 0.0043 regardless, which
-is the comparison worth making — but neither number is a converged fit in
-ergm's sense.
+Whole-pipeline timings, for reference: pseudo-likelihood 0.1 s, contrastive
+divergence 69 s, MCMLE 119 s. Choice probabilities for all 5,000 held-out
+customers take 1.4 ms against roughly 62 minutes in R, projected from 148.95 s
+measured for 200 of them.
 
-The second is an algorithm, not a language. To score one alternative, the R
+The three comparisons measure different things.
+
+Prediction is an algorithm, not a language. To score one alternative the R
 script calls `summary(formula)` on the whole 5,300-node network — 25,000 times
 over, once per alternative per customer — for values that differ from each
 other by a single toggled edge. `change_statistics` computes those differences
-directly instead. Making that same substitution in R would close most of the
-gap.
+directly. Making that same substitution in R would close most of the gap.
 
-The third is the control: the same linear program on both sides, at the same
-speed.
+The convex-hull row is the control: the same linear program on both sides,
+1.4–7.0 ms against 1–9 ms per case. Where no algorithmic difference exists,
+none appears.
+
+The MCMLE row is the one where the two are doing the same work by the same
+rules, and it is the smallest difference of the three.
 
 ## What is not recreated
 
@@ -84,7 +97,7 @@ The R script's `b2degrange(25)` specification is absent because it does not
 estimate: `ergm` reports `b2deg25+ not varying` and never completes an MCMLE
 iteration. The authors publish output for the star model only.
 
-The estimation core (`sampler`, `mcmle`, `cd`, `convex_hull`) is not specific
+The estimation core (`sampler`, `mcmle`, `contrastive_divergence`, `convex_hull`) is not specific
 to this model. Adding a constraint means writing its change statistics and its
 Gibbs move; the core does not change.
 
@@ -216,7 +229,7 @@ Every algorithm in `ergmpy/` is someone else's:
 |---|---|
 | `mcmle.py` — importance-sampled maximum likelihood | Geyer & Thompson (1992), *JRSS-B* 54(3), 657–699 |
 | `convex_hull.py`, and the step control in `mcmle.py` | Hummel, Hunter & Handcock (2012), *JCGS* 21(4), 920–939 |
-| `cd.py` — contrastive divergence as an MCMLE seed | Krivitsky (2017), *CSDA* 107, 149–161 |
+| `contrastive_divergence.py` — as an MCMLE seed | Krivitsky (2017), *CSDA* 107, 149–161 |
 | `choice/` — the model and its constraint | Sha et al. (2023), *Design Science* 9, e7 |
 
 `ergm` and the Statnet Project are the reference implementation checked
