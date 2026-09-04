@@ -149,9 +149,9 @@ uv run pytest
 uv fetches Python itself if you do not have 3.12+, so that is the only
 prerequisite.
 
-The suite takes about nine seconds and needs no R. Two of its tests compare
-against `ergm` output committed as CSV; the rest check internal consistency —
-change statistics against direct enumeration, derivatives against central
+The suite runs in seconds and needs no R. Some tests compare against `ergm`
+output committed as CSV; the rest check internal consistency — change
+statistics against direct enumeration, derivatives against central
 differences, sampled marginals against the closed form.
 
 `uv sync` also installs `ergmpy` itself as an editable package, so
