@@ -425,8 +425,9 @@ def _(mple_fit, run_full_fit, time, train):
 @app.cell
 def _(ROOT, mcmle_fit, mo, np, pl):
     ergm_converged = pl.read_csv(ROOT / "results" / "r" / "mcmle_star.csv")
-    terms = ["b2cov.V1", "b2cov.V2", "b2cov.V3", "b2factor.V4.2",
-             "b2factor.V4.3", "b2factor.V4.4", "b2factor.V4.5", "b2star2"]
+    from ergmpy.choice.predict import TERM_NAMES
+
+    terms = list(TERM_NAMES)
     ergm_lookup = dict(
         zip(ergm_converged["term"].to_list(),
             ergm_converged["estimate"].cast(pl.Float64, strict=False).to_list(),

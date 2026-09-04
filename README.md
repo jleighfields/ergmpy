@@ -252,15 +252,16 @@ worst at.
 | `uv run pytest` | The suite. |
 | `uv run ruff check ergmpy benchmarks tests notebooks` | Lint. |
 | `NUMBA_DISABLE_JIT=1 uv run pytest` | The suite with the kernel uncompiled — same source, no numba. |
-| `uv run python benchmarks/python/bench_cd_seeded.py` | The full fit. ~95 s. |
+| `uv run python benchmarks/python/fit_matched.py` | The full fit under settings matched to the R script. ~140 s. |
 | `uv run python benchmarks/python/verify_predict.py` | Probabilities against R's saved matrix, with timings. |
 | `uv run python benchmarks/python/verify_ch.py` | Shrink factor against `ergm`'s. |
 | `uv run python benchmarks/python/bench_mple.py` | Pseudo-likelihood fit and its Hessian check. |
 | `uv run python benchmarks/python/bench_sampler.py` | The Gibbs sweep, pure Python against numba. |
 | `uv run python benchmarks/python/sweep_cd.py` | The CD excursion-length sweep. ~3 min. |
+| `uv run python benchmarks/python/check_sampler_calibration.py` | Simulates at `ergm`'s published estimates, reports standardized gaps. |
+| `uv run python benchmarks/python/bench_vectorization.py` | numba against the vectorised NumPy alternatives. |
 
-Four more scripts cover intermediate stages; each names what it measures in
-its module docstring.
+Each script names what it measures in its module docstring.
 
 ## Regenerating the R baseline
 

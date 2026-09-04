@@ -61,7 +61,7 @@ def draw_statistics(data: ChoiceData, theta: np.ndarray, n_draws: int,
                                        dtype=np.int32)
         sampler.updates_numba(choice_sets, current, degree, linear,
                               theta_star2, customers)
-        draws[m] = sampler.network_statistics(choice_sets, current, data.design,
+        draws[m] = sampler.network_statistics(current, data.design,
                                               data.n_products)
     return draws
 
@@ -85,6 +85,10 @@ def fit(data: ChoiceData, theta0: np.ndarray, max_iterations: int = 60,
         The (8,) seed parameter and one history dict per iteration.
     """
     generator = np.random.default_rng(seed)
+    # Seeds numba's generator as well as numpy's: the excursions run through
+    # sampler.updates_numba, and np.random.seed does not reach the compiled
+    # generator from the interpreter. mcmle.simulate_chain does the same.
+    sampler.seed_numba(seed)
     np.random.seed(seed)
     g_obs = observed_statistics(data)
     theta = np.asarray(theta0, dtype=float).copy()

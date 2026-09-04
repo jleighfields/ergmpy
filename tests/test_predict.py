@@ -9,10 +9,12 @@ needing a live R and minutes of runtime.
 import numpy as np
 import polars as pl
 
-from ergmpy.choice.predict import choice_probabilities, load, top_n_accuracy
-
-TERMS = ["b2cov.V1", "b2cov.V2", "b2cov.V3", "b2factor.V4.2",
-         "b2factor.V4.3", "b2factor.V4.4", "b2factor.V4.5"]
+from ergmpy.choice.predict import (
+    TERM_NAMES,
+    choice_probabilities,
+    load,
+    top_n_accuracy,
+)
 
 
 def test_probabilities_sum_to_one(train) -> None:
@@ -42,7 +44,7 @@ def test_matches_the_probability_matrix_ergm_produced(test_set, recorded_r) -> N
     lookup = dict(zip(coefficients["term"].to_list(),
                       coefficients["estimate"].cast(pl.Float64, strict=False).to_list(),
                       strict=True))
-    theta_linear = np.array([lookup[t] for t in TERMS])
+    theta_linear = np.array([lookup[t] for t in TERM_NAMES[:7]])
 
     probabilities = choice_probabilities(test_set, theta_linear, lookup["b2star2"])
 

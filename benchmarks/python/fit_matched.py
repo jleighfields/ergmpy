@@ -48,6 +48,8 @@ def main() -> None:
           f"{result.sweeps:,} sweeps drawn")
     print(f"largest disagreement with ergm: "
           f"{np.abs(result.coef - ERGM).max():.6f}")
+    print("ergm's own star fit, for reference: 1027 s on 4 cores, "
+          "converged after 34 iterations")
     print()
     print(result.summary())
 

@@ -144,12 +144,11 @@ def run_sweeps(choice_sets: np.ndarray, current: np.ndarray, degree: np.ndarray,
         kernel(choice_sets, current, degree, linear, theta_star2, order)
 
 
-def network_statistics(choice_sets: np.ndarray, current: np.ndarray,
-                       design: np.ndarray, n_products: int) -> np.ndarray:
+def network_statistics(current: np.ndarray, design: np.ndarray,
+                       n_products: int) -> np.ndarray:
     """Computes the full statistic vector of one sampled configuration.
 
     Args:
-        choice_sets: Unused; present so callers can pass the same arguments.
         current: (n_customers,) purchase per customer.
         design: (n_products, 7) product design matrix.
         n_products: Number of products.

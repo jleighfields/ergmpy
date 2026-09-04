@@ -15,7 +15,7 @@ from pathlib import Path
 
 import numpy as np
 
-from ergmpy.choice.predict import load
+from ergmpy.choice.predict import TERM_NAMES, load
 from ergmpy.mcmle import observed_statistics, simulate
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -24,8 +24,7 @@ ROOT = Path(__file__).resolve().parents[2]
 # screenshot in reference/Plots/ and reproduced in results/r/.
 PUBLISHED = np.array([-3.0567573, -0.0363712, 1.6013929, 1.2357093,
                       2.2218421, 1.2257136, 1.1918759, 0.0057696])
-TERMS = ("b2cov.V1", "b2cov.V2", "b2cov.V3", "b2factor.V4.2",
-         "b2factor.V4.3", "b2factor.V4.4", "b2factor.V4.5", "b2star2")
+
 
 
 def main() -> None:
@@ -50,7 +49,7 @@ def main() -> None:
         f"{'term':<16}{'observed':>14}{'simulated mean':>16}"
         f"{'sd':>12}{'gap / sd':>11}",
     ]
-    for name, observed, m, s, g in zip(TERMS, g_obs, mean, spread, gap, strict=True):
+    for name, observed, m, s, g in zip(TERM_NAMES, g_obs, mean, spread, gap, strict=True):
         lines.append(f"{name:<16}{observed:>14.1f}{m:>16.1f}{s:>12.1f}{g:>11.3f}")
     lines += ["", f"largest standardized gap: {gap.max():.3f} sd"]
 

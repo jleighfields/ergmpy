@@ -28,6 +28,12 @@ import polars as pl
 # orders levels A,B,C,D,E, so ergm's b2factor.V4.2 through .V4.5 are B through E.
 V4_LEVELS = ("B", "C", "D", "E")
 
+#: The model's free parameters, in the order every coefficient vector uses.
+#: `edges` and the consideration-set offset are absent because the constraint
+#: holds them constant, which `ergm` reports by refusing to estimate them.
+TERM_NAMES = ("b2cov.V1", "b2cov.V2", "b2cov.V3", "b2factor.V4.2",
+              "b2factor.V4.3", "b2factor.V4.4", "b2factor.V4.5", "b2star2")
+
 
 class ChoiceData:
     """Choice sets, product attributes, and product degrees for one dataset.

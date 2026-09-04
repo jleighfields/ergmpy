@@ -19,13 +19,11 @@ import scipy.optimize
 from scipy.special import logsumexp
 
 from ergmpy.choice.predict import (
+    TERM_NAMES,
     ChoiceData,
     change_statistics,
     softmax_utilities,
 )
-
-TERM_NAMES = ("b2cov.V1", "b2cov.V2", "b2cov.V3", "b2factor.V4.2",
-              "b2factor.V4.3", "b2factor.V4.4", "b2factor.V4.5", "b2star2")
 
 
 class MPLEResult:
@@ -100,12 +98,11 @@ def observed_information(theta: np.ndarray, Z: np.ndarray) -> np.ndarray:
     return (second - np.einsum("np,nq->npq", expected, expected)).sum(axis=0)
 
 
-def fit(data: ChoiceData, tol: float = 1e-10) -> MPLEResult:
+def fit(data: ChoiceData) -> MPLEResult:
     """Fits the model by maximum pseudo-likelihood.
 
     Args:
         data: The dataset to fit.
-        tol: Gradient tolerance passed to the optimizer.
 
     Returns:
         The fitted MPLEResult.
@@ -116,7 +113,7 @@ def fit(data: ChoiceData, tol: float = 1e-10) -> MPLEResult:
     result = scipy.optimize.minimize(
         negative_log_pseudo_likelihood, x0=np.zeros(Z.shape[2]),
         args=(Z, chosen_slot), jac=True, method="BFGS",
-        options={"gtol": tol, "maxiter": 1000},
+        options={"gtol": 1e-10, "maxiter": 1000},
     )
     information = observed_information(result.x, Z)
     std_error = np.sqrt(np.diag(np.linalg.inv(information)))

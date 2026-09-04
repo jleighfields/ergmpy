@@ -10,7 +10,12 @@ from pathlib import Path
 import numpy as np
 import polars as pl
 
-from ergmpy.choice.predict import choice_probabilities, load, top_n_accuracy
+from ergmpy.choice.predict import (
+    TERM_NAMES,
+    choice_probabilities,
+    load,
+    top_n_accuracy,
+)
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -24,9 +29,8 @@ def main() -> None:
     # The offset row is -Inf, so polars types the column as string; cast it.
     estimates = coefs["estimate"].cast(pl.Float64, strict=False).to_list()
     lookup = dict(zip(coefs["term"].to_list(), estimates, strict=True))
-    theta_linear = np.array([lookup[t] for t in
-                             ["b2cov.V1", "b2cov.V2", "b2cov.V3", "b2factor.V4.2",
-                              "b2factor.V4.3", "b2factor.V4.4", "b2factor.V4.5"]])
+    # The seven linear terms; b2star2 is passed separately.
+    theta_linear = np.array([lookup[t] for t in TERM_NAMES[:7]])
     theta_star2 = lookup["b2star2"]
 
     t0 = time.perf_counter()

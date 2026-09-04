@@ -34,15 +34,14 @@ import numpy as np
 import scipy.optimize
 
 from ergmpy import sampler
-from ergmpy.choice.predict import ChoiceData
+from ergmpy.choice.predict import TERM_NAMES, ChoiceData
 from ergmpy.control import MCMLEControl
 from ergmpy.convergence import effective_sample_size, within_tolerance
 from ergmpy.convex_hull import shrink_into_ch
 
 log = logging.getLogger(__name__)
 
-TERM_NAMES = ("b2cov.V1", "b2cov.V2", "b2cov.V3", "b2factor.V4.2",
-              "b2factor.V4.3", "b2factor.V4.4", "b2factor.V4.5", "b2star2")
+
 
 
 class MCMLEResult:
@@ -98,8 +97,8 @@ def observed_statistics(data: ChoiceData) -> np.ndarray:
     Returns:
         (8,) statistics: the seven attribute sums, then b2star2.
     """
-    return sampler.network_statistics(data.choice_sets, data.chosen,
-                                      data.design, data.n_products)
+    return sampler.network_statistics(data.chosen, data.design,
+                                      data.n_products)
 
 
 def simulate_chain(data: ChoiceData, theta: np.ndarray, n_draws: int,
@@ -133,7 +132,7 @@ def simulate_chain(data: ChoiceData, theta: np.ndarray, n_draws: int,
     draws = np.empty((n_draws, 8))
     for m in range(n_draws):
         sampler.run_sweeps(choice_sets, current, degree, linear, theta_star2, thin)
-        draws[m] = sampler.network_statistics(choice_sets, current, data.design,
+        draws[m] = sampler.network_statistics(current, data.design,
                                               data.n_products)
     return draws, current
 
@@ -191,9 +190,14 @@ def simulate(data: ChoiceData, theta: np.ndarray, n_draws: int, burn_in: int,
     return draws, np.vstack([end for _, end in results])
 
 
+#: Bound on how far one step may move, in standardized units. Not a knob: it
+#: exists so a step computed from a sample whose importance weights are badly
+#: skewed cannot throw the fit somewhere it will not recover from.
+MAX_STANDARDIZED_STEP = 3.0
+
+
 def geyer_thompson_step(theta_t: np.ndarray, draws: np.ndarray,
-                        target: np.ndarray, max_standardized_step: float = 3.0
-                        ) -> np.ndarray:
+                        target: np.ndarray) -> np.ndarray:
     """Maximizes the importance-sampled log-likelihood ratio.
 
     The statistics differ in scale by two orders of magnitude -- b2star2 runs to
@@ -210,8 +214,6 @@ def geyer_thompson_step(theta_t: np.ndarray, draws: np.ndarray,
         theta_t: (8,) reference parameter the draws were simulated at.
         draws: (n_draws, 8) sampled statistics.
         target: (8,) statistics the step should match, already shrunk.
-        max_standardized_step: Trust region on the norm of the standardized
-            step, which bounds how far one iteration can move.
 
     Returns:
         The (8,) maximizing parameter vector.
@@ -251,8 +253,8 @@ def geyer_thompson_step(theta_t: np.ndarray, draws: np.ndarray,
                                      method="BFGS", options={"gtol": 1e-10})
     phi = result.x
     norm = np.linalg.norm(phi)
-    if norm > max_standardized_step:
-        phi = phi * (max_standardized_step / norm)
+    if norm > MAX_STANDARDIZED_STEP:
+        phi = phi * (MAX_STANDARDIZED_STEP / norm)
     delta = np.where(varying, phi / scaled, 0.0)
     return theta_t + delta
 
