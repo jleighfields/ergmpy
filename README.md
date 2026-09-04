@@ -111,8 +111,31 @@ Gibbs move; the core does not change.
 
 ## Getting started
 
-[uv](https://docs.astral.sh/uv/) manages the Python version, the environment
-and the dependencies, and will fetch Python itself if you lack 3.12+.
+### What uv is, and why it is here
+
+[uv](https://docs.astral.sh/uv/) is a Python package and project manager. It
+does in one tool what `pyenv`, `virtualenv`, `pip` and `pip-tools` do
+separately: installs the Python interpreter, creates the environment, resolves
+the dependencies, and writes a lockfile pinning exact versions and hashes.
+
+The reason it is used here is reproducibility, not convenience. **The
+environment is part of the experiment.** This package's claim is that it
+reproduces `ergm`'s numbers, and those numbers depend on the whole numerical
+stack — `numba` caps which `numpy` it will run against, and a different `numpy`
+could move a coefficient in the last digits the comparison is measured in.
+`uv.lock` freezes that stack the same way the dated Posit Package Manager
+snapshot freezes the R side. Both halves of the comparison are pinned, or
+neither is worth much.
+
+Two consequences worth knowing:
+
+- **`uv run <cmd>` syncs before it runs.** You cannot accidentally run against
+  a stale or half-installed environment, which is the failure that would
+  silently invalidate a comparison rather than announce itself.
+- **You never activate a virtualenv or call `pip`.** `uv sync` builds `.venv/`
+  from `pyproject.toml` and `uv.lock`; `uv run` executes inside it.
+
+### Setup
 
 ```bash
 curl -LsSf https://astral.sh/uv/install.sh | sh     # or brew/pipx install uv
@@ -123,14 +146,16 @@ uv sync
 uv run pytest
 ```
 
-Nine seconds, no R required. Two of the 22 tests compare against `ergm` output
-committed as CSV; the rest check internal consistency — change statistics
-against direct enumeration, derivatives against central differences, sampled
-marginals against the closed form.
+uv fetches Python itself if you do not have 3.12+, so that is the only
+prerequisite.
 
-`uv sync` installs `ergmpy` as an editable package, so `import ergmpy` works
-anywhere. `uv run <cmd>` runs inside that environment, syncing first, so you
-never activate a venv or call `pip`.
+The suite takes about nine seconds and needs no R. Two of its tests compare
+against `ergm` output committed as CSV; the rest check internal consistency —
+change statistics against direct enumeration, derivatives against central
+differences, sampled marginals against the closed form.
+
+`uv sync` also installs `ergmpy` itself as an editable package, so
+`import ergmpy` works from anywhere without a path insert.
 
 R is needed only to regenerate the comparison outputs, which are committed.
 
