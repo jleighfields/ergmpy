@@ -314,10 +314,14 @@ radius:
   it is **a change to one that did not reach the other**. Must Fix, and the
   check is to read both.
 - **Hardcoded scalar where a named constant exists** — a literal in one
-  module that also lives as a named constant in another. Two sources for one
-  value drift apart on the next edit. The standing instance is `ergm`'s eight
-  published estimates, written out in more than one benchmark script. Fix:
-  import the one definition and delete the copy.
+  module that also lives as a named constant in another, or in a tracked file
+  a script already reads. Two sources for one value drift apart on the next
+  edit. Find these by grepping a distinctive digit sequence across the repo
+  rather than by looking for a named instance: this rule has carried three
+  worked examples in a row, and each was fixed by the same commit that named
+  it, leaving the next reader hunting something that no longer exists. An
+  example in an instruction file has to be rechecked whenever the thing it
+  names is fixed, which is often the same day.
 - **A sampling default written in two places** — `n_draws`, `burn_in`,
   `thin` and `tolerance` are keyword defaults on the estimator that owns
   them. A benchmark script restating one as its own literal is a finding:

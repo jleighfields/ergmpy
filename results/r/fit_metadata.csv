@@ -1,3 +1,3 @@
 "fit","maxit","iterations","converged","seconds","mcmc_samplesize","mcmc_interval","ergm_version"
 "mcmle_star",200,34,TRUE,1026.98,4676,62500,"4.12.0"
-"coef_star_maxit2",2,2,FALSE,1026.98,1250,250000,"4.12.0"
+"coef_star_maxit2",2,2,FALSE,NA,1250,250000,"4.12.0"

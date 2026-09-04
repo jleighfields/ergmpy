@@ -34,13 +34,6 @@ V4_LEVELS = ("B", "C", "D", "E")
 TERM_NAMES = ("b2cov.V1", "b2cov.V2", "b2cov.V3", "b2factor.V4.2",
               "b2factor.V4.3", "b2factor.V4.4", "b2factor.V4.5", "b2star2")
 
-# `ergm`'s estimates for this model, in TERM_NAMES order, as published in the
-# authors' output screenshot under `reference/Plots/`. The fit this repo runs
-# reproduces them; `results/r/mcmle_star.csv` holds that run's own numbers,
-# which differ in the last digits as two Monte Carlo runs do.
-PUBLISHED_ESTIMATES = (-3.0567573, -0.0363712, 1.6013929, 1.2357093,
-                       2.2218421, 1.2257136, 1.1918759, 0.0057696)
-
 
 class ChoiceData:
     """Choice sets, product attributes, and product degrees for one dataset.

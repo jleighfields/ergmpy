@@ -1,0 +1,12 @@
+Transcribed from the authors' output screenshot,
+reference/Plots/ergm_choice6_star_estimation_result.PNG, which reports
+MCMLE.maxit = 200. It is the only place these numbers exist -- the authors
+published an image, not a table -- so unlike every other file in this
+directory it was typed rather than written by a script, and cannot be
+regenerated without re-running their fit.
+
+results/r/mcmle_star.csv holds this repo's own run at the same setting. The
+two agree to within 0.12 standard errors on every term, which is what two
+Monte Carlo runs give -- but they differ at the third significant figure
+(1.6014 against 1.5983 on b2cov.V3), so do not expect them to match digit for
+digit.

@@ -104,8 +104,8 @@ class MCMLEControl:
                 f"{self.n_chains} chains"
             )
 
-    #: Which `control.ergm` parameter each field mirrors, and whether the value
-    #: needs converting from proposals to sweeps.
+    # Which `control.ergm` parameter each field mirrors, and whether the value
+    # needs converting from proposals to sweeps.
     ERGM_EQUIVALENT = {
         "max_iterations": ("MCMLE.maxit", False),
         "n_draws": ("MCMC.samplesize", False),

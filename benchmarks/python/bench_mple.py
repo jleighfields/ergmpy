@@ -8,10 +8,10 @@ import time
 from pathlib import Path
 
 import numpy as np
+from published import published_estimates
 
 from ergmpy.choice import mple
 from ergmpy.choice.predict import (
-    PUBLISHED_ESTIMATES,
     TERM_NAMES,
     choice_probabilities,
     load,
@@ -20,7 +20,7 @@ from ergmpy.choice.predict import (
 
 ROOT = Path(__file__).resolve().parents[2]
 
-PUBLISHED = dict(zip(TERM_NAMES, PUBLISHED_ESTIMATES, strict=True))
+PUBLISHED = published_estimates()
 
 
 def check_hessian(result, data) -> float:

@@ -14,13 +14,13 @@ import time
 from pathlib import Path
 
 import numpy as np
+from published import published_estimates
 
-from ergmpy.choice.predict import PUBLISHED_ESTIMATES, TERM_NAMES, load
+from ergmpy.choice.predict import TERM_NAMES, load
 from ergmpy.mcmle import observed_statistics, simulate
 
 ROOT = Path(__file__).resolve().parents[2]
 
-PUBLISHED = np.array(PUBLISHED_ESTIMATES)
 
 
 
@@ -31,7 +31,8 @@ def main() -> None:
 
     np.random.seed(123)
     started = time.perf_counter()
-    draws, _ = simulate(data, PUBLISHED, n_draws=300, burn_in=100, thin=20)
+    published = np.array([published_estimates()[t] for t in TERM_NAMES])
+    draws, _ = simulate(data, published, n_draws=300, burn_in=100, thin=20)
     elapsed = time.perf_counter() - started
 
     mean = draws.mean(axis=0)

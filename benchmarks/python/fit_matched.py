@@ -1,10 +1,12 @@
 """Fits the star model under settings matched to the reference R script.
 
-Writes results/python/matched_settings_fit.log. The settings, the stopping
-rule and the objective all follow `ergm`; `docs/settings-comparison.md` records
-what is matched and what is not.
+Prints to stdout; `results/python/matched_settings_fit.log` is that output
+redirected, which is how the README runs it. The settings, the stopping rule
+and the objective all follow `ergm`; `docs/settings-comparison.md` records what
+is matched and what is not.
 """
 
+import csv
 import logging
 import sys
 import time
@@ -15,18 +17,47 @@ import numpy as np
 from ergmpy import contrastive_divergence as cd
 from ergmpy import mcmle
 from ergmpy.choice import mple
-from ergmpy.choice.predict import load
+from ergmpy.choice.predict import TERM_NAMES, load
 
 ROOT = Path(__file__).resolve().parents[2]
 
-# ergm's converged estimates at MCMLE.maxit = 200, from results/r/mcmle_star.csv.
-ERGM = np.array([-3.0498114, -0.0381650, 1.5982802, 1.2313084,
-                 2.2136847, 1.2216362, 1.1853674, 0.0057806])
+ERGM_COEFFICIENTS = ROOT / "results" / "r" / "mcmle_star.csv"
+ERGM_METADATA = ROOT / "results" / "r" / "fit_metadata.csv"
+
+
+def ergm_reference() -> tuple[np.ndarray, dict[str, str]]:
+    """Reads ergm's converged fit and how it was run.
+
+    Both files are written by benchmarks/r/export_fits.R from the fitted
+    object, so nothing here transcribes a number.
+
+    Returns:
+        The (8,) coefficients in TERM_NAMES order, and the metadata row.
+
+    Raises:
+        FileNotFoundError: If either is missing, rather than comparing against
+            nothing.
+    """
+    for path in (ERGM_COEFFICIENTS, ERGM_METADATA):
+        if not path.exists():
+            raise FileNotFoundError(
+                f"{path} not found; run benchmarks/r/export_fits.R"
+            )
+    estimates = {}
+    for row in csv.DictReader(ERGM_COEFFICIENTS.open()):
+        try:
+            estimates[row["term"]] = float(row["estimate"])
+        except ValueError:
+            continue
+    metadata = next(row for row in csv.DictReader(ERGM_METADATA.open())
+                    if row["fit"] == "mcmle_star")
+    return np.array([estimates[t] for t in TERM_NAMES]), metadata
 
 
 def main() -> None:
     """Runs pseudo-likelihood, contrastive divergence, then MCMLE."""
     logging.basicConfig(level=logging.INFO, format="%(message)s", stream=sys.stdout)
+    ergm, reference = ergm_reference()
     data = load(str(ROOT / "reference" / "Sampled_data_to_share.csv"))
 
     started = time.perf_counter()
@@ -47,9 +78,12 @@ def main() -> None:
     print(f"{result.n_iterations} iterations, converged {result.converged}, "
           f"{result.sweeps:,} sweeps drawn")
     print(f"largest disagreement with ergm: "
-          f"{np.abs(result.coef - ERGM).max():.6f}")
-    print("ergm's own star fit, for reference: 1027 s on 4 cores, "
-          "converged after 34 iterations")
+          f"{np.abs(result.coef - ergm).max():.6f}")
+    seconds = reference["seconds"]
+    print(f"ergm's own star fit, for reference: "
+          f"{'unrecorded' if seconds == 'NA' else format(float(seconds), '.0f') + ' s'}"
+          f" on 4 cores, {reference['iterations']} iterations, "
+          f"converged {reference['converged']}")
     print()
     print(result.summary())
 

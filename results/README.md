@@ -33,9 +33,12 @@ records rather than as reproducible outputs:
   shrink and diverged past about half a sweep per excursion.
 - `cd_seeded_vs_mple_seeded.log`, `full_recipe_mple_cd_mcmle.log` and
   `mcmle_star_from_mple.log` were written by benchmark scripts since deleted.
-  Two of them record a `max_standardized_gap` column that the stopping rule no
-  longer produces, so they could not be reproduced even by rewriting the
-  scripts. They hold the only measurements of MPLE-seeded against CD-seeded
-  MCMLE, and of a full 31-iteration fit from a pseudo-likelihood start.
+  The first two are reproducible in principle by rewriting their scripts and
+  are kept only because re-running costs minutes. The third records an MCMLE
+  `gap` column that `mcmle.fit` no longer keeps — its history now holds
+  `statistic` and `threshold` from the confidence test instead — so that one
+  could not be reproduced in the same form. Between them they hold the only
+  measurements of MPLE-seeded against CD-seeded MCMLE, and of a full
+  31-iteration fit from a pseudo-likelihood start.
 
 Regenerating: see [`benchmarks/README.md`](../benchmarks/README.md).
