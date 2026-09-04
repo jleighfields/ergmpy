@@ -172,6 +172,67 @@ execution is reactive rather than top-to-bottom (so a name is defined in
 exactly one cell), and `marimo run` serves it read-only while
 `marimo export html` executes it headless.
 
+## Tooling
+
+| | Where it is used | Why this one |
+|---|---|---|
+| **NumPy** | everything below `ChoiceData` | The estimators are dense numeric code over flat arrays. |
+| **numba** | the Gibbs kernel, `sampler.py` | The one place an interpreter is fatal. See below. |
+| **polars** | reading the two CSVs, building choice sets | Nothing here forces pandas, so the boundary uses one library and stops. |
+| **SciPy** | the step-length LP, BFGS, the F distribution | All three already needed; no separate solver. |
+| **ruff, pytest** | lint and the suite | |
+
+### numba, and why the kernel looks the way it does
+
+The Gibbs sweep is sequential, scalar and branchy: each customer's update reads
+the product degrees the previous update just changed. That dependency is why it
+cannot be vectorised — there is no array operation to express "and then the
+next one, given that" — and it is exactly the workload a bytecode interpreter
+handles worst, because the work per operation is tiny and interpreter overhead
+dominates completely.
+
+Measured on this data, same source file, the only difference being `@njit`:
+
+```
+pure Python :  ~80 ms/sweep
+numba       :  ~1.4 ms/sweep     (about 15 M customer updates/s)
+```
+
+Repeat runs vary by a few percent, so those are rounded rather than quoted to
+a precision they do not have.
+
+Two consequences show up in the code. The kernel is written as explicit scalar
+loops rather than vectorised NumPy, which would look like bad Python anywhere
+else — that form is what numba compiles. And `updates_python` and
+`updates_numba` come from one source definition, so `NUMBA_DISABLE_JIT=1` runs
+the compiled path as plain Python and either can check the other. They share a
+definition but not a random stream: inside `@njit`, `np.random` draws from
+numba's own generator, which `np.random.seed` cannot reach from the
+interpreter, so `sampler.seed_numba` exists to seed it.
+
+### polars, and where it stops
+
+polars reads the CSVs and assembles the choice sets; nothing below
+`ChoiceData` sees it. The split is deliberate — above the line is tabular work,
+below it is flat arrays handed to a compiled kernel — and it is why polars
+rather than pandas: no dependency here forces pandas, so the boundary uses one
+dataframe library and the numeric core uses none.
+
+### What is deliberately absent
+
+**No Rust extension.** The kernel was the obvious candidate, and numba closed
+the gap — at ~15 M updates/s it is not the bottleneck. A `pyo3` port would add a
+build matrix, a toolchain requirement for every contributor, and a second
+implementation to keep in step, for a speedup that does not change what the
+package can do.
+
+**No autodiff framework.** The gradients here are short closed-form
+expressions, and they are checked against central differences in the suite,
+which is a stronger guarantee than a framework computing them correctly and
+nobody verifying it. JAX or PyTorch would also be poor fits for the hot loop:
+it mutates state in a sequential scan, which is what array frameworks are
+worst at.
+
 ## Running things
 
 | Command | What it does |
