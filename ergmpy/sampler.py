@@ -11,6 +11,9 @@ pseudo-likelihood code uses. Only two product degrees move per update, so a
 step costs O(set_size) rather than a network traversal, and no general ERGM
 tie-toggling machinery is needed.
 
+`seed_python` and `seed_numba` seed the generator each kernel actually draws
+from; seeding numpy from the interpreter does not reach the compiled one.
+
 `updates_python` and `updates_numba` are built from one source definition --
 `gibbs_updates` bare, and the same function passed through @njit -- so the
 readable reference and the compiled kernel cannot drift. Setting
@@ -105,8 +108,24 @@ def gibbs_updates(choice_sets: np.ndarray, current: np.ndarray, degree: np.ndarr
         degree[j] += 1
 
 
+def seed_generator(seed: int) -> None:
+    """Seeds the generator the kernel draws from.
+
+    Called from Python this seeds numpy's; called from compiled code it seeds
+    numba's, which is a separate state that `np.random.seed` cannot reach from
+    the interpreter. Both kernels therefore need seeding through a function
+    compiled the same way they are.
+
+    Args:
+        seed: Value to seed with.
+    """
+    np.random.seed(seed)
+
+
 updates_python = gibbs_updates
 updates_numba = njit(cache=True, fastmath=False)(gibbs_updates)
+seed_python = seed_generator
+seed_numba = njit(cache=True)(seed_generator)
 
 
 def run_sweeps(choice_sets: np.ndarray, current: np.ndarray, degree: np.ndarray,

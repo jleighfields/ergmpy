@@ -161,7 +161,7 @@ n1 <- nrow(purchasenet_test); n2 <- ncol(purchasenet_test)
 prob_y_star <- matrix(0.0, n1, n2)
 model_train_star <- ergm_choice6_star
 
-ergm_choice6_star_test <- timeit("10_fit_test_structure_1iter", ergm(
+ergm_choice6_star_test <- timeit("10_fit_test_structure", ergm(
   net_purchase_test ~ edges + offset(edgecov(mat_inv_test)) +
     b2cov("V1") + b2cov("V2") + b2cov("V3") + b2factor("V4") + b2star(2),
   offset.coef = -Inf, constraints = ~b1degrees,

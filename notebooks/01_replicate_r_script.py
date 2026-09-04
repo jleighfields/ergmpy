@@ -449,7 +449,7 @@ def _(ROOT, mcmle_fit, mo, np, pl):
     }).with_columns((pl.col("ergmpy") - pl.col("ergm")).abs().alias("|difference|"))
 
     mo.vstack([
-        mo.md(f"**Coefficients ({source}) against `ergm`'s fit at maxit = 30.** "
+        mo.md(f"**Coefficients ({source}) against `ergm`'s fit at maxit = 200.** "
               f"Largest disagreement: "
               f"**{comparison['|difference|'].max():.5f}**."),
         comparison,
@@ -463,13 +463,15 @@ def _(mo):
         r"""
         Two things to keep in view when reading a timing next to `ergm`'s.
 
-        Both run four chains under the same settings and the same stopping
-        rule, but they get there differently: `ergm` took 34 cheap iterations
-        of about 58,000 sweeps, this took 3 expensive ones of 250,000. Total
-        sampling differs by 2.6× where the iteration count differs by 11×, so
-        the iteration counts do not mean what they appear to on their own.
+        Both run four chains under the same settings, stopping rule and
+        objective, but reach convergence differently: `ergm` takes many cheap
+        iterations, this takes a few expensive ones. Iteration counts are
+        therefore not comparable on their own, and no total-sampling comparison
+        is available either — `ergm` records only the sample size and interval
+        it *ended* with, having adapted throughout, so multiplying those by the
+        iteration count describes a run that never happened.
 
-        And these are Monte Carlo estimates — two runs of the *same*
+        And these are Monte Carlo estimates: two runs of the *same*
         implementation differ by about as much as the two implementations do.
         """
     )

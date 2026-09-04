@@ -27,17 +27,19 @@ References:
 """
 
 import dataclasses
+import logging
 from concurrent.futures import ProcessPoolExecutor
 
 import numpy as np
 import scipy.optimize
-from scipy.special import logsumexp
 
 from ergmpy import sampler
 from ergmpy.choice.predict import ChoiceData
 from ergmpy.control import MCMLEControl
-from ergmpy.convergence import effective_sample_size, within_confidence_region
+from ergmpy.convergence import effective_sample_size, within_tolerance
 from ergmpy.convex_hull import shrink_into_ch
+
+log = logging.getLogger(__name__)
 
 TERM_NAMES = ("b2cov.V1", "b2cov.V2", "b2cov.V3", "b2factor.V4.2",
               "b2factor.V4.3", "b2factor.V4.4", "b2factor.V4.5", "b2star2")
@@ -56,11 +58,13 @@ class MCMLEResult:
             size across statistics, and the interval and draw count it settled
             on.
         control: The settings the fit ran under.
+        sweeps: Total sweeps drawn, counting resample attempts that were
+            discarded and every chain's burn-in.
     """
 
     def __init__(self, coef: np.ndarray, std_error: np.ndarray, n_iterations: int,
                  converged: bool, history: list[dict],
-                 control: MCMLEControl) -> None:
+                 control: MCMLEControl, sweeps: int) -> None:
         """Stores the estimates; the class docstring describes each attribute."""
         self.coef = coef
         self.std_error = std_error
@@ -68,6 +72,7 @@ class MCMLEResult:
         self.converged = converged
         self.history = history
         self.control = control
+        self.sweeps = sweeps
 
     def summary(self) -> str:
         """Formats the estimates the way ergm's summary does.
@@ -115,6 +120,8 @@ def simulate_chain(data: ChoiceData, theta: np.ndarray, n_draws: int,
     Returns:
         The (n_draws, 8) statistics and the final configuration.
     """
+    # Seeds numba's generator, which np.random.seed cannot reach from here.
+    sampler.seed_numba(seed)
     np.random.seed(seed)
     choice_sets = np.ascontiguousarray(data.choice_sets)
     current = (data.chosen if state is None else state).astype(np.int32).copy()
@@ -150,30 +157,38 @@ def simulate(data: ChoiceData, theta: np.ndarray, n_draws: int, burn_in: int,
         n_draws: Total retained draws, divided among the chains.
         burn_in: Sweeps discarded before the first draw of each chain.
         thin: Sweeps between retained draws.
-        state: Optional starting configuration, used by every chain.
+        state: Optional (n_chains, n_customers) starting configurations, one
+            per chain. Sharing one across chains would start them all at the
+            same configuration each iteration, which weakens the independence
+            the batch-means estimator assumes.
         n_chains: Independent chains to run, in that many worker processes.
         seed: Base seed; chain i uses seed + i.
 
     Returns:
-        The (n_draws, 8) statistics, chain-major, and one final configuration.
+        The (n_draws, 8) statistics, chain-major, and each chain's final
+        configuration as an (n_chains, n_customers) array.
     """
     if n_chains == 1:
-        return simulate_chain(data, theta, n_draws, burn_in, thin, seed, state)
+        start = None if state is None else np.asarray(state).reshape(1, -1)[0]
+        draws, end = simulate_chain(data, theta, n_draws, burn_in, thin, seed,
+                                    start)
+        return draws, end.reshape(1, -1)
 
     per_chain = n_draws // n_chains
     if per_chain < 1:
         raise ValueError(f"{n_draws} draws cannot be split across {n_chains} chains")
 
+    starts = [None] * n_chains if state is None else list(np.asarray(state))
     with ProcessPoolExecutor(max_workers=n_chains) as pool:
         futures = [
             pool.submit(simulate_chain, data, theta, per_chain, burn_in, thin,
-                        seed + index, state)
+                        seed + index, starts[index])
             for index in range(n_chains)
         ]
         results = [f.result() for f in futures]
 
     draws = np.vstack([draw for draw, _ in results])
-    return draws, results[-1][1]
+    return draws, np.vstack([end for _, end in results])
 
 
 def geyer_thompson_step(theta_t: np.ndarray, draws: np.ndarray,
@@ -187,6 +202,9 @@ def geyer_thompson_step(theta_t: np.ndarray, draws: np.ndarray,
     unreliable. The draws are standardized first and the parameter transformed
     back afterwards, which leaves the objective unchanged: writing phi = delta *
     sd, the delta . mean terms cancel between the two halves of the ratio.
+
+    The objective is `ergm`'s lognormal metric rather than the exact
+    importance-sampled ratio; the comment on `objective` says why.
 
     Args:
         theta_t: (8,) reference parameter the draws were simulated at.
@@ -212,11 +230,21 @@ def geyer_thompson_step(theta_t: np.ndarray, draws: np.ndarray,
     target_standardized[~varying] = 0.0
 
     def objective(phi: np.ndarray) -> tuple[float, np.ndarray]:
+        # ergm's MCMLE.metric defaults to "lognormal": rather than the exact
+        # log-mean-exp of the importance weights, it approximates
+        # log E[exp(X)] by E[X] + Var(X)/2, which is exact when X is normal and
+        # far less sensitive to a single dominant weight when it is not. See
+        # ergm:::llik.fun.lognormal, whose varweight is 0.5.
         scores = standardized @ phi
-        normalizer = logsumexp(scores)
-        weights = np.exp(scores - normalizer)
-        value = phi @ target_standardized - (normalizer - np.log(len(draws)))
-        gradient = target_standardized - weights @ standardized
+        mean_score = scores.mean()
+        variance = scores.var()
+        value = phi @ target_standardized - (mean_score + 0.5 * variance)
+
+        # d/dphi of the variance is twice the covariance between the scores and
+        # the statistics that produced them.
+        centred = scores - mean_score
+        covariance = (centred @ standardized) / len(scores)
+        gradient = target_standardized - standardized.mean(axis=0) - covariance
         return -value, -gradient
 
     result = scipy.optimize.minimize(objective, x0=np.zeros(len(scale)), jac=True,
@@ -264,35 +292,63 @@ def fit(data: ChoiceData, theta0: np.ndarray,
     g_obs = observed_statistics(data)
     theta = np.asarray(theta0, dtype=float).copy()
     state = None
+    interval, draw_count = control.thin, control.n_draws
+    sweeps_drawn = 0
     history: list[dict] = []
     converged = False
 
     for iteration in range(1, control.max_iterations + 1):
         # Resample until the draws are worth target_ess independent ones,
         # shortening the interval and taking proportionally more draws each
-        # time. A confidence test on a sample that autocorrelation has made
+        # time. A convergence test on a sample that autocorrelation has made
         # smaller than it looks is the failure this prevents.
-        interval, draw_count = control.thin, control.n_draws
-        for _ in range(control.max_resamples):
-            draws, state = simulate(data, theta, draw_count, control.burn_in,
-                                    interval, state, n_chains=control.n_chains,
-                                    seed=control.seed + 1000 * iteration)
+        #
+        # interval and draw_count persist across iterations rather than
+        # resetting, which is what ergm does: it assigns the adapted values
+        # back onto its control object, and its reference fit walked the
+        # interval from 1e6 down to 62,500 proposals monotonically over 34
+        # iterations. Restarting each iteration would re-pay every discarded
+        # attempt.
+        for attempt in range(control.max_resamples):
+            draws, state = simulate(
+                data, theta, draw_count, control.burn_in, interval, state,
+                n_chains=control.n_chains,
+                # The attempt index enters the seed so a resample draws a new
+                # sample rather than replaying the one that fell short.
+                seed=control.seed + 1000 * iteration + 17 * attempt,
+            )
+            sweeps_drawn += (len(draws) * interval
+                             + control.burn_in * control.n_chains)
             smallest_ess = float(
                 effective_sample_size(draws, n_chains=control.n_chains).min()
             )
             if smallest_ess >= control.target_ess:
                 break
+            log.info(
+                "iteration %d: effective sample size %.0f below target %.0f; "
+                "shortening interval %d -> %d and taking %d draws",
+                iteration, smallest_ess, control.target_ess, interval,
+                max(1, int(interval / control.interval_drop)),
+                int(draw_count * control.interval_drop),
+            )
             interval = max(1, int(interval / control.interval_drop))
             draw_count = int(draw_count * control.interval_drop)
 
-        inside, statistic, threshold = within_confidence_region(
-            g_obs, draws, control.confidence, n_chains=control.n_chains
+        inside, statistic, threshold = within_tolerance(
+            g_obs, draws, control.confidence, control.tolerance_sd,
+            n_chains=control.n_chains
         )
         record = {"iteration": iteration, "statistic": statistic,
                   "threshold": threshold, "min_ess": smallest_ess,
-                  "interval": interval, "n_draws": draw_count}
+                  "interval": interval, "n_draws": len(draws),
+                  "sweeps": sweeps_drawn}
 
         if inside:
+            log.info(
+                "iteration %d of at most %d: p = %.4g. Converged with %g%% "
+                "confidence.", iteration, control.max_iterations, statistic,
+                control.confidence * 100,
+            )
             converged = True
             history.append({**record, "step_length": 1.0})
             break
@@ -301,12 +357,25 @@ def fit(data: ChoiceData, theta0: np.ndarray,
         gamma = min(1.0, shrink_into_ch(g_obs, draws)) * (1.0 - control.step_margin)
         target = gamma * g_obs + (1.0 - gamma) * draws.mean(axis=0)
         theta = geyer_thompson_step(theta, draws, target)
+        log.info(
+            "iteration %d of at most %d: p = %.4g. Not converged; step length "
+            "%.3f, %d draws at interval %d, effective sample size %.0f.",
+            iteration, control.max_iterations, statistic, gamma,
+            len(draws), interval, smallest_ess,
+        )
         history.append({**record, "step_length": float(gamma)})
 
-    draws, _ = simulate(data, theta, control.n_draws, control.burn_in,
-                        control.thin, state, n_chains=control.n_chains,
-                        seed=control.seed)
+    # The last iteration's draws are what the convergence test approved, so
+    # they are what the covariance comes from. Drawing a fresh sample here
+    # would compute standard errors from one the effective-sample-size gate
+    # never saw, and would add an uncounted iteration's worth of sampling.
+    if not converged:
+        log.warning(
+            "MCMLE did not converge in %d iterations; the estimates may not be "
+            "accurate. Raise max_iterations, or start from a better seed.",
+            control.max_iterations,
+        )
     covariance = np.cov(draws, rowvar=False)
     std_error = np.sqrt(np.diag(np.linalg.pinv(covariance)))
     return MCMLEResult(theta, std_error, len(history), converged, history,
-                       control)
+                       control, sweeps_drawn)

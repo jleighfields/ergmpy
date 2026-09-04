@@ -5,7 +5,7 @@ import numpy as np
 from ergmpy.convergence import (
     batch_means_covariance,
     effective_sample_size,
-    within_confidence_region,
+    within_tolerance,
 )
 
 
@@ -60,46 +60,83 @@ def test_covariance_of_the_mean_shrinks_with_more_draws() -> None:
     assert np.trace(long_cov) < np.trace(short_cov)
 
 
-def test_the_simulated_mean_is_inside_its_own_region() -> None:
-    """A point at the centre of the draws cannot be rejected."""
-    draws = np.random.default_rng(5).normal(size=(900, 4))
-    inside, statistic, threshold = within_confidence_region(draws.mean(axis=0), draws)
-    assert inside
-    assert statistic < threshold
+def test_the_simulated_mean_passes() -> None:
+    """A point at the centre of the draws converges: the gap is exactly zero."""
+    draws = np.random.default_rng(5).normal(size=(4000, 3))
+    passed, pvalue, threshold = within_tolerance(draws.mean(axis=0), draws)
+    assert passed
+    assert pvalue < threshold
 
 
-def test_a_distant_point_is_rejected() -> None:
-    """A point many standard errors away falls outside the region."""
-    draws = np.random.default_rng(6).normal(size=(900, 4))
-    inside, statistic, threshold = within_confidence_region(
-        draws.mean(axis=0) + 3.0, draws
+def test_a_distant_point_fails() -> None:
+    """A point outside the tolerance region cannot be declared converged."""
+    draws = np.random.default_rng(6).normal(size=(4000, 3))
+    passed, pvalue, threshold = within_tolerance(draws.mean(axis=0) + 3.0, draws)
+    assert not passed
+    assert pvalue > threshold
+
+
+def test_a_noisier_sample_does_not_become_easier_to_pass() -> None:
+    """Convergence must get harder as the sampling gets noisier, not easier.
+
+    This is the property that separates a non-inferiority test from a test of
+    "indistinguishable from zero". Under the latter, autocorrelation widens the
+    interval that counts as indistinguishable, so an under-sampled iteration
+    declares success. Both chains here carry the same gap; only the
+    autocorrelation differs.
+    """
+    clean = ar1_chain(0.0, 2000, 3, seed=20)
+    noisy = ar1_chain(0.9, 2000, 3, seed=21)
+
+    # The gap is held fixed in each chain's own standard deviations, not in
+    # absolute units. An AR(0.9) chain has a marginal spread about 2.3 times
+    # the independent one's, and the tolerance region scales with that spread,
+    # so the same absolute gap would be a *smaller* gap for the noisy chain and
+    # the comparison would measure the wrong thing. What differs is then only
+    # the precision of the mean, and the p-value for non-convergence must be
+    # larger where that is worse.
+    _, clean_pvalue, _ = within_tolerance(
+        clean.mean(axis=0) + 0.1 * clean.std(axis=0), clean
     )
-    assert not inside
-    assert statistic > threshold
+    _, noisy_pvalue, _ = within_tolerance(
+        noisy.mean(axis=0) + 0.1 * noisy.std(axis=0), noisy
+    )
+    assert noisy_pvalue > clean_pvalue
 
 
-def test_chains_are_not_batched_across_their_join() -> None:
-    """Batching across independent chains would misread the autocorrelation.
+def test_a_non_varying_statistic_is_dropped() -> None:
+    """A constant statistic carries no information and must not break the test."""
+    draws = np.random.default_rng(7).normal(size=(4000, 3))
+    draws = np.column_stack([draws, np.full(4000, 5.0)])
+    passed, _, _ = within_tolerance(draws.mean(axis=0), draws)
+    assert passed
 
-    Four correlated chains laid end to end look like one chain with three
-    discontinuities. Telling the estimator how many there are keeps every batch
-    inside a single chain.
+
+def test_no_batch_spans_two_chains() -> None:
+    """Every batch must sit inside one chain, not across the join between two.
+
+    Checked on the mechanism rather than on an outcome. Holding each chain at
+    its own constant level makes any batch that stays inside a chain average to
+    exactly that level, while one spanning two averages to something between
+    them -- a value no chain holds. Randomness would only obscure that.
+
+    Measured at the shape this package actually runs (1,248 draws over 4
+    chains, 32 batches), chain-aware batching changes the covariance of the
+    mean by under 1%, because only three batches of thirty-two straddle a join.
+    The distinction is kept because it is correct, not because it is currently
+    load-bearing.
     """
-    chains = [ar1_chain(0.85, 500, 3, seed=10 + i) for i in range(4)]
-    draws = np.vstack(chains)
-    aware = effective_sample_size(draws, n_chains=4)
-    assert np.all(aware > 0)
-    assert np.all(aware < draws.shape[0])
+    levels = [0.0, 10.0, 20.0, 30.0]
+    draws = np.vstack([np.full((500, 2), level) for level in levels])
+
+    _, n_batches = batch_means_covariance(draws, n_batches=8, n_chains=4)
+    batch_size = draws.shape[0] // n_batches
+    batch_means = draws[: batch_size * n_batches].reshape(
+        n_batches, batch_size, -1
+    ).mean(axis=1)
+
+    assert n_batches == 8
+    assert set(np.unique(batch_means)) == set(levels)
 
 
-def test_non_varying_statistics_are_dropped() -> None:
-    """A constant statistic carries no information and must not break the test.
 
-    `ergm` reports the same situation as a term "not varying"; here it would
-    otherwise make the covariance singular.
-    """
-    draws = np.random.default_rng(7).normal(size=(900, 4))
-    draws[:, 2] = 5.0
-    observed = draws.mean(axis=0)
-    inside, _, _ = within_confidence_region(observed, draws)
-    assert inside

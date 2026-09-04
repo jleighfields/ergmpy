@@ -19,7 +19,7 @@ which scale linearly, so the projections below are arithmetic rather than guesse
 | `06_fit_star` | 265.53 | 4 CD + 2 MCMLE iterations |
 | `08_read_test_csv` | 0.05 | |
 | `09_make_network_test` | 3.80 | |
-| `10_fit_test_structure_1iter` | 211.50 | a full fit at `maxit = 1`, used only for its formula |
+| `10_fit_test_structure` | 211.50 | a full fit at `maxit = 1`, used only for its formula |
 | `11_prediction_loop` | 148.95 | 200 of 5000 customers |
 | `12_topn_eval` | 0.02 | |
 
@@ -44,12 +44,17 @@ every proposal.
 | `05_fit_degree` | 30 | did not complete one MCMLE iteration in >15 min |
 | `06_fit_star` | 30 | ~63 min |
 | `07_fit_both` | 50 | ~108 min |
-| `10_fit_test_structure_1iter` | 1 | 3.5 min (measured) |
+| `10_fit_test_structure` | 1 | 3.5 min (measured) |
 | `11_prediction_loop` | — | ~62 min |
 | **Total, excluding degree** | | **~5.5 hours** |
 
-At the `maxit = 200` shown in the authors' published screenshot, the star fit
-alone projects to ~7 hours.
+**Superseded.** The projections above assumed a constant per-iteration cost
+measured from a two-iteration run. They are wrong, because later iterations are
+much cheaper and `ergm` adapts its sampling as it goes. The star fit was later
+run at the published `MCMLE.maxit = 200` and took **1,027 s**, converging after
+34 iterations -- against a projection here of about seven hours. Treat the
+measured figures in `timings.tsv` and `fit_metadata.csv` as authoritative and
+this table as a record of how far a linear extrapolation missed.
 
 ## The degree model does not estimate
 
@@ -75,6 +80,6 @@ customer — 25,000 full recomputations of every network statistic over a
 5,300-node network — to obtain values that differ from each other by a single
 toggled edge. Change statistics give the same numbers in O(1) per alternative.
 
-`10_fit_test_structure_1iter` runs a complete `ergm()` fit on the test network,
+`10_fit_test_structure` runs a complete `ergm()` fit on the test network,
 including its CD phase and one MCMLE iteration, purely to obtain a fitted object
 whose `$formula` can then be evaluated. Nothing from the fit is used.

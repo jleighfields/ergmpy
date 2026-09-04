@@ -8,9 +8,9 @@ joint distribution, and the draws are autocorrelated, so the sample standard
 deviation understates the uncertainty in their mean.
 
 `ergm` terminates on a confidence statement instead -- `MCMLE.termination =
-"confidence"` at `MCMLE.confidence = 0.99` -- asking whether the observed
-statistics lie inside a joint confidence region around the simulated mean.
-This implements the same test.
+"confidence"` at `MCMLE.confidence = 0.99` -- declaring convergence only when
+it can rule out non-convergence at that level. `within_tolerance` follows that
+direction, and its docstring sets out where it departs from `ergm`.
 
 Two pieces are needed. The covariance of the *mean* must account for the
 chain's autocorrelation, which multivariate batch means estimates by splitting
@@ -28,7 +28,12 @@ References:
 """
 
 import numpy as np
-import scipy.stats
+
+from ergmpy.hotelling import (
+    ellipsoid_mahalanobis,
+    nonconvergence_pvalue,
+    standardized_quadratic_form,
+)
 
 
 def batch_means_covariance(draws: np.ndarray, n_batches: int | None = None,
@@ -95,44 +100,66 @@ def effective_sample_size(draws: np.ndarray, n_chains: int = 1) -> np.ndarray:
     return np.where(inflated > 0, n_draws * marginal / inflated, float(n_draws))
 
 
-def within_confidence_region(observed: np.ndarray, draws: np.ndarray,
-                             confidence: float = 0.99,
-                             n_chains: int = 1) -> tuple[bool, float, float]:
-    """Tests whether the observed statistics lie inside the simulated region.
+def within_tolerance(observed: np.ndarray, draws: np.ndarray,
+                     confidence: float = 0.99, precision: float = 0.1,
+                     n_chains: int = 1) -> tuple[bool, float, float]:
+    """Runs `ergm`'s confidence test on the current sample.
 
-    Statistics that never vary carry no information and are dropped from the
-    test rather than making the covariance singular; `ergm` reports the same
-    situation as a term "not varying".
+    Ported from `ergm:::ergm.MCMLE`'s `MCMLE.termination = "confidence"` branch.
+    The null is that the fit has *not* converged, and it is rejected only when
+    the gap sits confidently inside a tolerance region -- so a noisier sample
+    raises the p-value and refuses, where a test of "indistinguishable from
+    zero" would accept.
 
     Args:
         observed: (n_statistics,) statistics of the observed network.
-        draws: (n_draws, n_statistics) sampled statistics, in chain order.
-        confidence: Level of the joint region, matching `MCMLE.confidence`.
+        draws: (n_draws, n_statistics) sampled statistics, chain-major. For
+            this model the estimating equations are the statistics themselves,
+            so this is `ergm`'s `esteq`.
+        confidence: Matching `MCMLE.confidence`.
+        precision: Scales the tolerance region, matching
+            `MCMLE.MCMC.precision`.
         n_chains: How many independent chains the draws came from.
 
     Returns:
-        Whether the observed statistics are inside the region, the Mahalanobis
-        statistic, and the threshold it was compared against.
+        Whether convergence can be declared, the p-value for non-convergence,
+        and the threshold it must fall below.
     """
     varying = draws.std(axis=0) > 1e-12
     if not varying.any():
-        return True, 0.0, 0.0
+        return True, 0.0, 1.0 - confidence
 
+    kept = draws[:, varying]
     gap = (observed - draws.mean(axis=0))[varying]
-    covariance, n_batches = batch_means_covariance(draws[:, varying],
-                                                   n_chains=n_chains)
     n_parameters = int(varying.sum())
+    threshold = 1.0 - confidence
 
-    if n_batches - n_parameters < 1:
-        raise ValueError(
-            f"{n_batches} batches cannot support a joint test on "
-            f"{n_parameters} statistics; take more draws"
+    # Vm: the tolerance region, precision times the statistics' covariance.
+    tolerance_region = precision * np.cov(kept, rowvar=False)
+
+    # estcov: the covariance of the mean, which batch means estimates so the
+    # chain's autocorrelation is carried into the test.
+    mean_covariance, n_batches = batch_means_covariance(kept, n_chains=n_chains)
+
+    # ergm tests only once the point estimate is inside the region; outside it,
+    # there is no distance-to-boundary to measure and it keeps sampling.
+    inside, _ = standardized_quadratic_form(gap, tolerance_region)
+    if inside >= 1.0:
+        return False, 1.0, threshold
+    if inside <= 1e-12:
+        # A gap indistinguishable from zero sits at the centre of the region,
+        # where the root find below has no crossing to bracket: scaling zero
+        # never reaches a boundary. It is also the most converged a fit can be.
+        return True, 0.0, threshold
+
+    try:
+        t_squared, metric_nullity = ellipsoid_mahalanobis(
+            gap, mean_covariance, tolerance_region
         )
+    except (ValueError, np.linalg.LinAlgError):
+        # ergm reports "Unable to test for convergence" here and samples more.
+        return False, 1.0, threshold
 
-    distance = float(gap @ np.linalg.solve(covariance, gap))
-    # Hotelling's T-squared, scaled to an F: the covariance is estimated from
-    # n_batches batch means, so the threshold is wider than a chi-square would
-    # give at this batch count.
-    scale = (n_batches - n_parameters) / ((n_batches - 1) * n_parameters)
-    threshold = scipy.stats.f.ppf(confidence, n_parameters, n_batches - n_parameters)
-    return distance * scale < threshold, distance * scale, float(threshold)
+    free = n_parameters - metric_nullity
+    pvalue = nonconvergence_pvalue(t_squared, free, n_batches - 1)
+    return pvalue < threshold, pvalue, threshold

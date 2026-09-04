@@ -59,6 +59,10 @@ class MCMLEControl:
 
     # ergm's own defaults, carried over so both sides run the same rules.
     confidence: float = 0.99         # MCMLE.confidence
+    # How large a gap counts as small enough, in marginal standard deviations
+    # of the statistics. ergm scales its tolerance by the model's estimated
+    # parameter covariance instead; see ergmpy.convergence.within_tolerance.
+    tolerance_sd: float = 0.5
     interval_drop: float = 2.0       # MCMLE.effectiveSize.interval_drop
     max_resamples: int = 16          # MCMC.effectiveSize.maxruns
     step_margin: float = 0.05        # MCMLE.steplength.margin
@@ -68,7 +72,28 @@ class MCMLEControl:
     # ergm's choice given the requested interval, and it adapts both during a
     # fit -- the converged run ended at MCMC.burnin = 2e6, or 400 sweeps.
     target_ess: float = 895.0        # MCMC.effectiveSize
-    burn_in: int = 1600              # MCMC.burnin = 8e6 proposals
+    burn_in: int = 1600              # MCMC.burnin
+
+    def __post_init__(self) -> None:
+        """Rejects settings that would make a fit do nothing.
+
+        Both cases produced a well-formed wrong answer rather than an error:
+        no resamples left `draws` unbound, and no iterations returned the
+        starting parameter with standard errors as though a fit had run.
+
+        Raises:
+            ValueError: If `max_resamples` or `max_iterations` is below 1, or
+                if `n_draws` cannot be split across `n_chains`.
+        """
+        if self.max_resamples < 1:
+            raise ValueError("max_resamples must be at least 1")
+        if self.max_iterations < 1:
+            raise ValueError("max_iterations must be at least 1")
+        if self.n_draws < self.n_chains:
+            raise ValueError(
+                f"n_draws {self.n_draws} cannot be split across "
+                f"{self.n_chains} chains"
+            )
 
     #: Which `control.ergm` parameter each field mirrors, and whether the value
     #: needs converting from proposals to sweeps.
@@ -79,6 +104,7 @@ class MCMLEControl:
         "burn_in": ("MCMC.burnin", True),
         "n_chains": ("parallel", False),
         "confidence": ("MCMLE.confidence", False),
+        "tolerance_sd": (None, False),
         "target_ess": ("MCMC.effectiveSize", False),
         "interval_drop": ("MCMLE.effectiveSize.interval_drop", False),
         "max_resamples": ("MCMC.effectiveSize.maxruns", False),
@@ -103,6 +129,7 @@ class MCMLEControl:
         """
         lines = [f"{'setting':<16}{'value':>12}   control.ergm"]
         for field, (ergm_name, in_proposals) in self.ERGM_EQUIVALENT.items():
-            unit = " (sweeps)" if in_proposals else ""
-            lines.append(f"{field:<16}{getattr(self, field):>12}   {ergm_name}{unit}")
+            unit = " (proposals -> sweeps)" if in_proposals else ""
+            counterpart = f"{ergm_name}{unit}" if ergm_name else "(no counterpart)"
+            lines.append(f"{field:<16}{getattr(self, field):>12}   {counterpart}")
         return "\n".join(lines)

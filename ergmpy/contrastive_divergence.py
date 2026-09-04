@@ -22,12 +22,16 @@ References:
         Statistics and Data Analysis, 107, 149-161.
 """
 
+import logging
+
 import numpy as np
 
 from ergmpy import sampler
 from ergmpy.choice.predict import ChoiceData
 from ergmpy.convex_hull import shrink_into_ch
 from ergmpy.mcmle import geyer_thompson_step, observed_statistics
+
+log = logging.getLogger(__name__)
 
 
 def draw_statistics(data: ChoiceData, theta: np.ndarray, n_draws: int,
@@ -94,7 +98,11 @@ def fit(data: ChoiceData, theta0: np.ndarray, max_iterations: int = 60,
         gap[varying] = np.abs(g_obs - draws.mean(axis=0))[varying] / spread[varying]
         history.append({"iteration": iteration,
                         "max_standardized_gap": float(gap.max())})
+        log.debug("contrastive divergence iteration %d: largest standardized "
+                  "gap %.4f", iteration, gap.max())
         if gap.max() < tolerance:
+            log.info("contrastive divergence converged after %d iterations",
+                     iteration)
             break
         # Every excursion starts at the observed network, but with enough
         # updates the draws travel far enough that g_obs leaves their convex

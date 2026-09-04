@@ -1,18 +1,19 @@
-MPLE 0.1s | CD 69.1s | MCMLE 119.4s | total 188.5s
-3 iterations, converged True
-  iter  1  step 0.950  T   176.47  minESS   1063  interval  200  draws 1250
-  iter  2  step 0.950  T    11.96  minESS   1847  interval  100  draws 2500
-  iter  3  step 1.000  T     1.02  minESS   1191  interval  200  draws 1250
-largest disagreement with converged ergm: 0.004509
-total sampling: 750,000 sweeps (ergm 1,987,300)
-term                 Estimate   Std. Error    z value
-b2cov.V1            -3.045303     0.095552    -31.871
-b2cov.V2            -0.037094     0.047357     -0.783
-b2cov.V3             1.594103     0.072951     21.852
-b2factor.V4.2        1.232792     0.060472     20.386
-b2factor.V4.3        2.212373     0.070298     31.471
-b2factor.V4.4        1.221516     0.063725     19.168
-b2factor.V4.5        1.189163     0.076858     15.472
-b2star2              0.005783     0.000119     48.681
+iteration 1: effective sample size 739 below target 895; shortening interval 200 -> 100 and taking 2500 draws
+iteration 1 of at most 200: p = 1. Not converged; step length 0.950, 2500 draws at interval 100, effective sample size 1897.
+iteration 2 of at most 200: p = 9.03e-21. Converged with 99% confidence.
 
-converged after 3 iterations
+MPLE 0.1s | CD 68.1s | MCMLE 69.6s | total 137.7s
+2 iterations, converged True, 768,800 sweeps drawn
+largest disagreement with ergm: 0.007706
+
+term                 Estimate   Std. Error    z value
+b2cov.V1            -3.053492     0.098307    -31.061
+b2cov.V2            -0.037548     0.047304     -0.794
+b2cov.V3             1.599169     0.072120     22.174
+b2factor.V4.2        1.232996     0.059212     20.823
+b2factor.V4.3        2.217594     0.072569     30.558
+b2factor.V4.4        1.222903     0.063224     19.342
+b2factor.V4.5        1.193073     0.076645     15.566
+b2star2              0.005776     0.000123     46.795
+
+converged after 2 iterations

@@ -30,8 +30,11 @@ why the estimation here is cheap.
 
 ## What the recreation reproduces
 
-Both sides run the same settings, the same stopping rule and four chains. What
-matches and what does not is set out in
+Both sides run the same settings, the same stopping rule, the same objective
+and four chains. `ergm`'s confidence termination is ported in
+`ergmpy/hotelling.py` rather than approximated, and its lognormal likelihood
+metric is used in place of the exact importance-sampled one. What matches and
+what does not is set out in
 [`docs/settings-comparison.md`](docs/settings-comparison.md); the settings
 themselves live on one object that names each `control.ergm` parameter it
 mirrors.
@@ -41,8 +44,8 @@ mirrors.
 | Choice probabilities | 2.7e-13 against R's saved matrix | `verify_predict.py` |
 | Convex-hull shrink factor | 2.2e-10 against `shrink_into_CH` | `verify_ch.py` |
 | Gibbs sampler | reproduces the observed statistics to 0.121 sd when simulating at `ergm`'s published estimates | `results/python/sampler_at_published_theta.log` |
-| MCMLE coefficients | 0.0045 | `results/python/matched_settings_fit.log` |
-| MCMLE standard errors | within 5.0% | same |
+| MCMLE coefficients | 0.0077 | `results/python/matched_settings_fit.log` |
+| MCMLE standard errors | within 2.8% | same |
 
 The reference is `ergm` at `MCMLE.maxit = 200`, the setting the authors'
 published output reports. It converged after 34 iterations —
@@ -54,37 +57,28 @@ interval it adapted to. Their committed script sets 30 instead, at which
 
 | | `ergm` | `ergmpy` |
 |---|---|---|
-| Wall clock, star fit | 1,027 s | 119 s |
+| Wall clock, star fit | 1,027 s | 70 s |
+| Whole pipeline | — | 138 s (MPLE 0.1 s, CD 68 s, MCMLE 70 s) |
 | Cores | 4 | 4 chains |
-| MCMLE iterations | 34 | 3 |
-| Sweeps per iteration | 58,450 | 250,000 |
-| **Total sampling** | **1,987,300 sweeps** | **750,000 sweeps** |
+| MCMLE iterations | 34 | 2 |
+| Sweeps drawn | not recorded per iteration | 768,800 |
 
-Read the iteration counts together with the sweeps, not on their own. `ergm`
-takes many cheap iterations and `ergmpy` takes few expensive ones, both
-chasing the same effective-sample-size target, so total sampling differs by
-2.6× where the iteration count differs by 11×. Per sweep the two are within
-about 4× of one another.
+`ergmpy`'s sweep count is measured — `MCMLEResult.sweeps` totals every sample
+actually drawn, including resample attempts the effective-sample-size gate
+discarded and each chain's burn-in.
 
-Whole-pipeline timings, for reference: pseudo-likelihood 0.1 s, contrastive
-divergence 69 s, MCMLE 119 s. Choice probabilities for all 5,000 held-out
-customers take 1.4 ms against roughly 62 minutes in R, projected from 148.95 s
-measured for 200 of them.
+There is no comparable figure for `ergm`. Its fitted object records only the
+sample size and interval it *ended* with, and it adapted throughout: its
+interval fell from 1e6 proposals to 62,500 while its sample size rose from
+1,250 to 4,676, so no iteration but the last ran at the recorded values.
+Multiplying them by the iteration count, which an earlier version of this
+README did, understates the early iterations and produces a total the run never
+performed. Getting a real figure needs `ergm` instrumented per iteration.
 
-The three comparisons measure different things.
-
-Prediction is an algorithm, not a language. To score one alternative the R
-script calls `summary(formula)` on the whole 5,300-node network — 25,000 times
-over, once per alternative per customer — for values that differ from each
-other by a single toggled edge. `change_statistics` computes those differences
-directly. Making that same substitution in R would close most of the gap.
-
-The convex-hull row is the control: the same linear program on both sides,
-1.4–7.0 ms against 1–9 ms per case. Where no algorithmic difference exists,
-none appears.
-
-The MCMLE row is the one where the two are doing the same work by the same
-rules, and it is the smallest difference of the three.
+So the honest comparison here is wall clock, at matched settings, on the same
+four cores — and it should be read knowing that the two reached convergence by
+different routes: 34 cheap iterations against 2 expensive ones, both under the
+same stopping rule.
 
 ## What is not recreated
 

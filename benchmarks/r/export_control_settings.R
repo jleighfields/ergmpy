@@ -9,8 +9,14 @@
 suppressMessages(library(ergm))
 
 OUT <- "results/r/control_settings.csv"
+# MCMC.effectiveSize is the figure ergm computes for the model and adapts
+# toward; MCMLE.effectiveSize is the base it starts from. Both are exported,
+# because a control that names one as its counterpart has to be checkable
+# against it.
 KEYS <- c("MCMLE.maxit", "MCMC.samplesize", "MCMC.interval", "MCMC.burnin",
           "MCMLE.termination", "MCMLE.confidence", "MCMLE.effectiveSize",
+          "MCMC.effectiveSize", "MCMC.base.effectiveSize",
+          "MCMLE.effectiveSize.interval_drop", "MCMC.effectiveSize.maxruns",
           "parallel", "seed", "MCMLE.steplength", "MCMLE.steplength.margin",
           "CD.maxit", "CD.nsteps")
 
