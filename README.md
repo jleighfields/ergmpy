@@ -25,10 +25,9 @@ Two things follow. `edges` becomes unidentified — the count is pinned at 5,000
 in every valid configuration, and `ergm` reports it as conflicting with the
 constraint — leaving eight free parameters: `b2cov.V1`–`V3`,
 `b2factor.V4.2`–`.5`, and `b2star2`. And sampling becomes a per-customer
-multinomial draw rather than a proposal over arbitrary tie toggles, which is
-why the estimation here is cheap.
+multinomial draw rather than a proposal over arbitrary tie toggles.
 
-## What the recreation reproduces
+## Agreement with `ergm`
 
 Both sides run the same settings, the same stopping rule, the same objective
 and four chains. `ergm`'s confidence termination is ported in
@@ -71,16 +70,15 @@ There is no comparable figure for `ergm`. Its fitted object records only the
 sample size and interval it *ended* with, and it adapted throughout: its
 interval fell from 1e6 proposals to 62,500 while its sample size rose from
 1,250 to 4,676, so no iteration but the last ran at the recorded values.
-Multiplying them by the iteration count, which an earlier version of this
-README did, understates the early iterations and produces a total the run never
-performed. Getting a real figure needs `ergm` instrumented per iteration.
+Multiplying them by the iteration count understates the early iterations and
+produces a total the run never performed. Getting a real figure needs `ergm`
+instrumented per iteration.
 
-So the honest comparison here is wall clock, at matched settings, on the same
-four cores — and it should be read knowing that the two reached convergence by
-different routes: 34 cheap iterations against 2 expensive ones, both under the
-same stopping rule.
+The comparable figure is therefore wall clock, at matched settings on the
+same four cores, read knowing that the two converged by different routes: 34
+cheap iterations against 2 expensive ones, under the same stopping rule.
 
-## What is not recreated
+## What is not implemented
 
 `ergm` catalogues 139 terms, 21 constraints, 25 proposals and 4 references
 (`search.ergmTerms()` and its siblings, ergm 4.12.0). This implements three
@@ -91,9 +89,9 @@ The R script's `b2degrange(25)` specification is absent because it does not
 estimate: `ergm` reports `b2deg25+ not varying` and never completes an MCMLE
 iteration. The authors publish output for the star model only.
 
-The estimation core (`sampler`, `mcmle`, `contrastive_divergence`, `convex_hull`) is not specific
-to this model. Adding a constraint means writing its change statistics and its
-Gibbs move; the core does not change.
+The estimation core (`sampler`, `mcmle`, `contrastive_divergence`,
+`convex_hull`) is not specific to this model. Adding a constraint means writing
+its change statistics and its Gibbs move; the core does not change.
 
 ## Layout
 
@@ -111,7 +109,7 @@ Gibbs move; the core does not change.
 
 ## Getting started
 
-### What uv is, and why it is here
+### Using uv
 
 [uv](https://docs.astral.sh/uv/) is a Python package and project manager. It
 does in one tool what `pyenv`, `virtualenv`, `pip` and `pip-tools` do
@@ -124,29 +122,29 @@ reproduces `ergm`'s numbers, and those numbers depend on the whole numerical
 stack — `numba` caps which `numpy` it will run against, and a different `numpy`
 could move a coefficient in the last digits the comparison is measured in.
 `uv.lock` freezes that stack the same way the dated Posit Package Manager
-snapshot freezes the R side. Both halves of the comparison are pinned, or
-neither is worth much.
+snapshot freezes the R side, so both halves of the comparison are pinned.
 
-Two consequences worth knowing:
+Two consequences:
 
 - **`uv run <cmd>` syncs before it runs.** You cannot accidentally run against
-  a stale or half-installed environment, which is the failure that would
-  silently invalidate a comparison rather than announce itself.
+  a stale or half-installed environment, which would silently invalidate a
+  comparison.
 - **You never activate a virtualenv or call `pip`.** `uv sync` builds `.venv/`
   from `pyproject.toml` and `uv.lock`; `uv run` executes inside it.
+
+To install uv, follow
+[Astral's installation instructions](https://docs.astral.sh/uv/getting-started/installation/).
 
 ### Setup
 
 ```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh     # or brew/pipx install uv
-
 git clone https://github.com/jleighfields/ergmpy.git
 cd ergmpy
 uv sync
 uv run pytest
 ```
 
-uv fetches Python itself if you do not have 3.12+, so that is the only
+uv fetches Python itself if you do not have 3.12+, so uv is the only
 prerequisite.
 
 The suite runs in seconds and needs no R. Some tests compare against `ergm`
@@ -162,9 +160,12 @@ R is needed only to regenerate the comparison outputs, which are committed.
 ### The notebook
 
 ```bash
-uv sync --group notebooks     # marimo is a separate group; a plain sync omits it
+uv sync                       # marimo and altair are regular dependencies
 uv run marimo edit notebooks/01_replicate_r_script.py
 ```
+
+`uv sync --group notebooks` additionally installs JupyterLab, which is a front
+end for working on notebooks rather than something they import.
 
 `01_replicate_r_script.py` walks the R script's four parts with the reasoning
 at each step. If marimo is new to you: notebooks are plain `.py` files,
@@ -182,12 +183,12 @@ exactly one cell), and `marimo run` serves it read-only while
 | **SciPy** | the step-length LP, BFGS, the F distribution | All three already needed; no separate solver. |
 | **ruff, pytest** | lint and the suite | |
 
-### numba, and why the kernel looks the way it does
+### numba
 
 The Gibbs sweep is sequential, scalar and branchy: each customer's update reads
 the product degrees the previous update just changed. The work per operation is
-tiny, so interpreter overhead dominates completely — which is the workload a
-JIT helps most and vectorisation helps least.
+tiny, so interpreter overhead dominates — the workload a JIT helps most and
+vectorisation least.
 
 Measured on this data (rounded; repeat runs vary a few percent):
 
@@ -205,24 +206,23 @@ overhead exceeds what the interpreter was costing. numba beats it by about 70×.
 
 The last two rows matter because the dependency is between customers, not
 between chains — so a batch dimension over chains sidesteps it, and with enough
-chains NumPy overtakes numba. It takes a lot of chains. At the four this
-package runs, matching `ergm`'s `parallel = 4`, vectorising across them is not
-close; break-even is somewhere past a hundred. And 256 chains is not free
-statistically: splitting 1,250 draws that many ways leaves about five per
-chain, far too few for the within-chain batch means the convergence test needs.
+chains NumPy overtakes numba. At the four this package runs, matching `ergm`'s
+`parallel = 4`, vectorising across them is not close; break-even is somewhere
+past a hundred. And 256 chains is not free statistically: splitting 1,250 draws
+that many ways leaves about five per chain, far too few for the within-chain
+batch means the convergence test needs.
 
 So numba is the right tool at this sampling design, not in general.
 
 Two consequences show up in the code. The kernel is written as explicit scalar
-loops rather than vectorised NumPy, which would look like bad Python anywhere
-else — that form is what numba compiles. And `updates_python` and
-`updates_numba` come from one source definition, so `NUMBA_DISABLE_JIT=1` runs
-the compiled path as plain Python and either can check the other. They share a
-definition but not a random stream: inside `@njit`, `np.random` draws from
-numba's own generator, which `np.random.seed` cannot reach from the
-interpreter, so `sampler.seed_numba` exists to seed it.
+loops rather than vectorised NumPy, because that form is what numba compiles.
+And `updates_python` and `updates_numba` come from one source definition, so
+`NUMBA_DISABLE_JIT=1` runs the compiled path as plain Python and either can
+check the other. They share a definition but not a random stream: inside
+`@njit`, `np.random` draws from numba's own generator, which `np.random.seed`
+cannot reach from the interpreter, so `sampler.seed_numba` exists to seed it.
 
-### polars, and where it stops
+### polars
 
 polars reads the CSVs and assembles the choice sets; nothing below
 `ChoiceData` sees it. The split is deliberate — above the line is tabular work,
@@ -230,7 +230,7 @@ below it is flat arrays handed to a compiled kernel — and it is why polars
 rather than pandas: no dependency here forces pandas, so the boundary uses one
 dataframe library and the numeric core uses none.
 
-### What is deliberately absent
+### Deliberate omissions
 
 **No Rust extension.** The kernel was the obvious candidate, and numba closed
 the gap — at ~15 M updates/s it is not the bottleneck. A `pyo3` port would add a
@@ -245,7 +245,7 @@ nobody verifying it. JAX or PyTorch would also be poor fits for the hot loop:
 it mutates state in a sequential scan, which is what array frameworks are
 worst at.
 
-## Running things
+## Commands
 
 | Command | What it does |
 |---|---|
@@ -282,8 +282,7 @@ Rscript benchmarks/r/gen_convex_hull_cases.R # the saved shrink-factor cases
 
 `bench.R` takes `FITS` (which models), `MAXIT_CAP` (MCMLE iterations) and
 `PRED_N` (customers scored). All three only shorten a run; no statistical
-setting changes. `PRED_N` defaults to 5,000, whose prediction loop alone takes
-about an hour.
+setting changes. `PRED_N` defaults to 5,000.
 
 `setup.sh` installs from a dated Posit Package Manager snapshot, currently
 `2026-09-03`, overridable with `SNAPSHOT=<date>`. `ergm` is the oracle every

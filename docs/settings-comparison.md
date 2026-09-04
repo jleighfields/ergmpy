@@ -26,9 +26,7 @@ object by `benchmarks/r/export_control_settings.R`, and the signature of
 | Step-length margin | `MCMLE.steplength.margin = 0.05` | `step_margin = 0.05` |
 | Draws retained per iteration | `MCMC.samplesize = 1250` | `n_draws = 1250` |
 | Between retained draws | `MCMC.interval = 1e6` proposals | `thin = 200` sweeps |
-| Discarded before first draw | `MCMC.burnin = 8e6` proposals | `burn_in = 1600` sweeps |
 | Parallel chains | `parallel = 4` (PSOCK) | `n_chains = 4` (processes) |
-| Stopping rule | `MCMLE.termination = "confidence"` | joint confidence region |
 | Confidence level | `MCMLE.confidence = 0.99` | `confidence = 0.99` |
 | Step length | Hummel, via convex hull | Hummel, via convex hull |
 | Seed | `seed = 123` | `seed = 123` |
@@ -52,7 +50,7 @@ Each iteration records the interval, draw count and achieved effective sample
 size it ended with, so a run can be compared against `ergm`'s recorded
 `MCMC.interval` and `MCMC.samplesize` rather than assumed equivalent.
 
-
+The differences in full:
 
 | Setting | `ergm` | `ergmpy` | Why |
 |---|---|---|---|
@@ -69,7 +67,7 @@ propagate into the estimates. The seed each produced is recorded with the run.
 
 Under the matched settings the two do comparable work per iteration, and both
 *shorten* the interval and take proportionally more draws when a sample falls
-short of the effective-sample-size target. `results/r/fit_metadata.csv` records what `ergm` ended up using, and
-each `ergmpy` iteration records its own interval and achieved effective sample
-size in `history`, so a timing can be checked against the effort behind it
-rather than assumed comparable.
+short of the effective-sample-size target. `results/r/fit_metadata.csv` records
+what `ergm` ended up using, and each `ergmpy` iteration records its own interval
+and achieved effective sample size in `history`, so a timing can be checked
+against the effort behind it rather than assumed comparable.

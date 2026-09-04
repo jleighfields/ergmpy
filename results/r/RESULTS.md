@@ -5,8 +5,9 @@ The script pins `parallel = 4`, so the other 44 cores are idle throughout.
 
 Run settings: `FITS=star MAXIT_CAP=2 PRED_N=200`. Every statistical setting is
 the original's — `MCMC.samplesize = 1250`, `MCMC.interval = 1e6`, `seed = 123`.
-Only the iteration count and the prediction-loop length are shortened, both of
-which scale linearly, so the projections below are arithmetic rather than guesses.
+Only the iteration count and the prediction-loop length are shortened. The
+projections below extrapolate linearly from that, and the note beneath them
+records how far the extrapolation missed.
 
 ## Measured
 

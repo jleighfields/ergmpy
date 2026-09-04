@@ -12,14 +12,16 @@ dependencies = [
     "polars>=1.0",
     # numba pins a numpy ceiling, so it decides how new numpy can be here.
     "numba>=0.60",
+    "marimo>=0.9",
+    "altair>=5.0",
 ]
 
 [dependency-groups]
-# marimo is its own group: a plain `uv sync` leaves it out, and the notebooks
-# then fail on `import marimo`. Install with `uv sync --group notebooks`.
+# jupyterlab is a front end for working on notebooks, not something the
+# package uses, so a plain `uv sync` leaves it out. Install it with
+# `uv sync --group notebooks`.
 notebooks = [
-    "marimo>=0.9",
-    "altair>=5.0",
+    "jupyterlab>=4.6.3",
 ]
 dev = [
     "pytest>=8.0",
