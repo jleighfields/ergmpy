@@ -13,7 +13,8 @@ OUT <- "results/r/control_settings.csv"
 # toward; MCMLE.effectiveSize is the base it starts from. Both are exported,
 # because a control that names one as its counterpart has to be checkable
 # against it.
-KEYS <- c("MCMLE.maxit", "MCMC.samplesize", "MCMC.interval", "MCMC.burnin",
+KEYS <- c("MCMLE.MCMC.precision",
+          "MCMLE.maxit", "MCMC.samplesize", "MCMC.interval", "MCMC.burnin",
           "MCMLE.termination", "MCMLE.confidence", "MCMLE.effectiveSize",
           "MCMC.effectiveSize", "MCMC.base.effectiveSize",
           "MCMLE.effectiveSize.interval_drop", "MCMC.effectiveSize.maxruns",
@@ -23,7 +24,10 @@ KEYS <- c("MCMLE.maxit", "MCMC.samplesize", "MCMC.interval", "MCMC.burnin",
 rows <- list()
 for (rds in c("fit_star.rds", "fit_star_maxit2.rds")) {
   path <- file.path("results/r", rds)
-  if (!file.exists(path)) next
+  if (!file.exists(path)) {
+    cat(sprintf("SKIP %s (not found -- run bench.R first)\n", rds))
+    next
+  }
   control <- readRDS(path)$control
   for (k in KEYS) {
     v <- control[[k]]

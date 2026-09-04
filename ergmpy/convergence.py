@@ -111,6 +111,28 @@ def within_tolerance(observed: np.ndarray, draws: np.ndarray,
     raises the p-value and refuses, where a test of "indistinguishable from
     zero" would accept.
 
+    Three things differ from `ergm`, all in how the inputs to that test are
+    estimated rather than in the test itself:
+
+    - **Where the gap is measured.** `ergm` reweights the draws by importance
+      to the parameter its optimizer has just proposed, and tests the gap
+      there. This tests the gap at the parameter the draws came from, so the
+      estimate it approves is the one it tested.
+    - **How the covariance of the mean is estimated.** `ergm` fits a vector
+      autoregression to the draws (`ergm:::spectrum0.mvar`) and reads the
+      asymptotic variance off it. This uses multivariate batch means, which
+      needs no order selection and no model for the autocorrelation.
+    - **Where the degrees of freedom come from.** Following from that, the
+      F reference here is `n_batches - 1`, the number of independent
+      quantities the covariance was estimated from. `ergm` uses the effective
+      sample size minus one, which its autoregression yields directly and
+      which is the larger number, so this test is the more conservative of
+      the two at equal sample size.
+
+    A statistic that never varies is dropped rather than zeroed out of the
+    tolerance region, which is `ergm`'s treatment; the two agree because a
+    dropped coordinate contributes nothing either way.
+
     Args:
         observed: (n_statistics,) statistics of the observed network.
         draws: (n_draws, n_statistics) sampled statistics, chain-major. For

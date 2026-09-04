@@ -16,6 +16,7 @@ object by `benchmarks/r/export_control_settings.R`, and the signature of
 | Effective sample size target | `MCMC.effectiveSize = 895` | `target_ess = 895` |
 | Stopping rule | `MCMLE.termination = "confidence"` | ported; see `ergmpy/hotelling.py` |
 | Tolerance region | `MCMLE.MCMC.precision = 0.1` | `precision = 0.1` |
+| Burn-in | `MCMC.burnin = 8e6` proposals, from the `maxit = 2` fit | `burn_in = 1600` sweeps |
 | Objective | `MCMLE.metric = "lognormal"` | same approximation |
 | Optimizer | `MCMLE.method = "BFGS"` | BFGS |
 | Chain continuation | `MCMLE.sequential = TRUE` | each chain resumes from its own end state |

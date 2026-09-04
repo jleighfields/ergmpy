@@ -122,7 +122,18 @@ def ellipsoid_mahalanobis(y: np.ndarray, w: np.ndarray, u: np.ndarray,
         return np.linalg.solve(identity + multiplier * scaled, y)
 
     def on_boundary(multiplier: float) -> float:
-        return standardized_quadratic_form(boundary_point(multiplier), u, tol)[0] - 1.0
+        # R wraps this in ERRVL2(..., +Inf): a trial point that leaves U's span
+        # is treated as infinitely far outside, which is what lets the root
+        # find bracket. Letting the error escape instead makes the caller
+        # report "not converged" on every iteration forever -- and the
+        # statistics here go rank-deficient readily, since the b1degrees
+        # constraint is a linear-dependence generator.
+        try:
+            return standardized_quadratic_form(
+                boundary_point(multiplier), u, tol
+            )[0] - 1.0
+        except (ValueError, np.linalg.LinAlgError):
+            return np.inf
 
     largest = np.real(np.linalg.eigvals(scaled)).max()
     lower = -1.0 / largest if largest > 0 else -1e12

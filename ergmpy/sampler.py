@@ -11,8 +11,8 @@ pseudo-likelihood code uses. Only two product degrees move per update, so a
 step costs O(set_size) rather than a network traversal, and no general ERGM
 tie-toggling machinery is needed.
 
-`seed_python` and `seed_numba` seed the generator each kernel actually draws
-from; seeding numpy from the interpreter does not reach the compiled one.
+`seed_numba` seeds the generator the compiled kernel draws from; seeding numpy
+from the interpreter does not reach it.
 
 `updates_python` and `updates_numba` are built from one source definition --
 `gibbs_updates` bare, and the same function passed through @njit -- so the
@@ -38,9 +38,7 @@ import numpy as np
 
 try:
     from numba import njit
-    HAVE_NUMBA = True
 except ImportError:  # pragma: no cover - exercised only where numba is absent
-    HAVE_NUMBA = False
 
     def njit(*args: object, **kwargs: object) -> Callable:
         """Falls back to the undecorated function when numba is unavailable.
@@ -124,7 +122,6 @@ def seed_generator(seed: int) -> None:
 
 updates_python = gibbs_updates
 updates_numba = njit(cache=True, fastmath=False)(gibbs_updates)
-seed_python = seed_generator
 seed_numba = njit(cache=True)(seed_generator)
 
 

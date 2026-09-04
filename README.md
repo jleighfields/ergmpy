@@ -44,8 +44,8 @@ mirrors.
 | Choice probabilities | 2.7e-13 against R's saved matrix | `verify_predict.py` |
 | Convex-hull shrink factor | 2.2e-10 against `shrink_into_CH` | `verify_ch.py` |
 | Gibbs sampler | reproduces the observed statistics to 0.121 sd when simulating at `ergm`'s published estimates | `results/python/sampler_at_published_theta.log` |
-| MCMLE coefficients | 0.0077 | `results/python/matched_settings_fit.log` |
-| MCMLE standard errors | within 2.8% | same |
+| MCMLE coefficients | 0.0072 | `results/python/matched_settings_fit.log` |
+| MCMLE standard errors | within 2.7% | same |
 
 The reference is `ergm` at `MCMLE.maxit = 200`, the setting the authors'
 published output reports. It converged after 34 iterations —

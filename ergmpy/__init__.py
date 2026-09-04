@@ -1,9 +1,9 @@
 """Exponential-random-graph models on constrained sample spaces.
 
-The estimation core -- `sampler`, `mcmle`, `cd` and `convex_hull` -- is not
-specific to any one model. It fits an ERGM whose sample space is restricted by
-a constraint, using importance-sampled maximum likelihood with the Hummel step
-length, seeded by contrastive divergence.
+The estimation core -- `sampler`, `mcmle`, `contrastive_divergence` and
+`convex_hull` -- is not specific to any one model. It fits an ERGM whose
+sample space is restricted by a constraint, using importance-sampled maximum
+likelihood with the Hummel step length, seeded by contrastive divergence.
 
 What makes that fast is specialising the sampler to the constraint rather than
 proposing arbitrary tie toggles: when the constraint says what a valid

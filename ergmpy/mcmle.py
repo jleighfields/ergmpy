@@ -335,7 +335,7 @@ def fit(data: ChoiceData, theta0: np.ndarray,
             draw_count = int(draw_count * control.interval_drop)
 
         inside, statistic, threshold = within_tolerance(
-            g_obs, draws, control.confidence, control.tolerance_sd,
+            g_obs, draws, control.confidence, control.precision,
             n_chains=control.n_chains
         )
         record = {"iteration": iteration, "statistic": statistic,

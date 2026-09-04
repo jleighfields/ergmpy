@@ -33,6 +33,10 @@ class MCMLEControl:
         n_chains: Independent chains, run in that many processes. `parallel`.
         confidence: Level of the joint confidence region used to stop.
             `MCMLE.confidence`.
+        precision: Scales the tolerance region the gap must sit inside,
+            passed to `ergmpy.convergence.within_tolerance` as its `precision`.
+            `MCMLE.MCMC.precision`, which `results/r/fit_star.rds` recorded as
+            0.1 for the converged reference fit.
         target_ess: Effective sample size an iteration aims for before testing
             convergence. `MCMC.effectiveSize` -- the figure ergm computes for
             the model, not `MCMC.base.effectiveSize`, the base it scales from.
@@ -59,10 +63,11 @@ class MCMLEControl:
 
     # ergm's own defaults, carried over so both sides run the same rules.
     confidence: float = 0.99         # MCMLE.confidence
-    # How large a gap counts as small enough, in marginal standard deviations
-    # of the statistics. ergm scales its tolerance by the model's estimated
-    # parameter covariance instead; see ergmpy.convergence.within_tolerance.
-    tolerance_sd: float = 0.5
+    # Multiplies the statistics' covariance to give the tolerance region the
+    # gap must sit inside, so a larger value accepts a larger gap. ergm's
+    # MCMLE.MCMC.precision under confidence termination, whose default is 0.1
+    # and which the converged reference fit recorded as 0.1.
+    precision: float = 0.1
     interval_drop: float = 2.0       # MCMLE.effectiveSize.interval_drop
     max_resamples: int = 16          # MCMC.effectiveSize.maxruns
     step_margin: float = 0.05        # MCMLE.steplength.margin
@@ -72,7 +77,11 @@ class MCMLEControl:
     # ergm's choice given the requested interval, and it adapts both during a
     # fit -- the converged run ended at MCMC.burnin = 2e6, or 400 sweeps.
     target_ess: float = 895.0        # MCMC.effectiveSize
-    burn_in: int = 1600              # MCMC.burnin
+    # From the maxit = 2 fit's MCMC.burnin of 8e6 proposals. Note this is the
+    # one setting not taken from the converged reference, which ended at 2e6
+    # (400 sweeps) having adapted down; 1600 is the more conservative choice
+    # and the fit's own adaptation shortens it when the sample allows.
+    burn_in: int = 1600
 
     def __post_init__(self) -> None:
         """Rejects settings that would make a fit do nothing.
@@ -104,7 +113,7 @@ class MCMLEControl:
         "burn_in": ("MCMC.burnin", True),
         "n_chains": ("parallel", False),
         "confidence": ("MCMLE.confidence", False),
-        "tolerance_sd": (None, False),
+        "precision": ("MCMLE.MCMC.precision", False),
         "target_ess": ("MCMC.effectiveSize", False),
         "interval_drop": ("MCMLE.effectiveSize.interval_drop", False),
         "max_resamples": ("MCMC.effectiveSize.maxruns", False),

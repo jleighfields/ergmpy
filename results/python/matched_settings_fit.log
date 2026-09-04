@@ -1,19 +1,19 @@
-iteration 1: effective sample size 739 below target 895; shortening interval 200 -> 100 and taking 2500 draws
-iteration 1 of at most 200: p = 1. Not converged; step length 0.950, 2500 draws at interval 100, effective sample size 1897.
-iteration 2 of at most 200: p = 9.03e-21. Converged with 99% confidence.
+iteration 1: effective sample size 723 below target 895; shortening interval 200 -> 100 and taking 2500 draws
+iteration 1 of at most 200: p = 1. Not converged; step length 0.950, 2500 draws at interval 100, effective sample size 1929.
+iteration 2 of at most 200: p = 1.181e-06. Converged with 99% confidence.
 
-MPLE 0.1s | CD 68.1s | MCMLE 69.6s | total 137.7s
+MPLE 0.1s | CD 68.2s | MCMLE 69.5s | total 137.8s
 2 iterations, converged True, 768,800 sweeps drawn
-largest disagreement with ergm: 0.007706
+largest disagreement with ergm: 0.007195
 
 term                 Estimate   Std. Error    z value
-b2cov.V1            -3.053492     0.098307    -31.061
-b2cov.V2            -0.037548     0.047304     -0.794
-b2cov.V3             1.599169     0.072120     22.174
-b2factor.V4.2        1.232996     0.059212     20.823
-b2factor.V4.3        2.217594     0.072569     30.558
-b2factor.V4.4        1.222903     0.063224     19.342
-b2factor.V4.5        1.193073     0.076645     15.566
-b2star2              0.005776     0.000123     46.795
+b2cov.V1            -3.052737     0.098308    -31.053
+b2cov.V2            -0.037650     0.047305     -0.796
+b2cov.V3             1.598829     0.072168     22.154
+b2factor.V4.2        1.232821     0.059134     20.848
+b2factor.V4.3        2.217072     0.072535     30.565
+b2factor.V4.4        1.222883     0.063130     19.371
+b2factor.V4.5        1.192563     0.076519     15.585
+b2star2              0.005777     0.000123     46.787
 
 converged after 2 iterations
