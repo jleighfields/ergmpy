@@ -244,8 +244,6 @@ def fit(data: ChoiceData, theta0: np.ndarray,
         theta0: (8,) starting parameter, normally a contrastive-divergence seed.
         control: Run settings; defaults to `MCMLEControl()`, whose defaults
             match what the reference R script asks `control.ergm` for.
-            `MCMLEControl.from_ergm_settings` builds one from what a fitted
-            ergm object actually used.
         **overrides: Individual `MCMLEControl` fields to replace, for a caller
             that wants one setting changed without constructing a control.
 

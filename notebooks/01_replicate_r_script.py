@@ -382,10 +382,9 @@ def _(mo):
 
         Two are `ergm`'s own computations rather than fixed numbers, and it
         adapts both during a fit: `MCMC.effectiveSize`, which it scales up from
-        a base of 64 to 895 for this model, and `MCMC.burnin`. To match a
-        specific run rather than the request,
-        `MCMLEControl.from_ergm_settings` reads the settings a fitted `ergm`
-        object recorded — which is what `results/r/control_settings.csv` holds.
+        a base of 64 to 895 for this model, and `MCMC.burnin`. What a fitted
+        `ergm` object ended up using is recorded in
+        `results/r/control_settings.csv`, for checking these against.
 
         `docs/settings-comparison.md` lists what matches, what does not, and
         why. The largest unmatched piece is `ergm`'s sampling controller, about
