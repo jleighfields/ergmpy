@@ -17,7 +17,7 @@ import numpy as np
 from ergmpy import contrastive_divergence as cd
 from ergmpy import mcmle
 from ergmpy.choice import mple
-from ergmpy.choice.predict import TERM_NAMES, load
+from ergmpy.choice.predict import TERM_NAMES, load_choice_data
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -58,7 +58,7 @@ def main() -> None:
     """Runs pseudo-likelihood, contrastive divergence, then MCMLE."""
     logging.basicConfig(level=logging.INFO, format="%(message)s", stream=sys.stdout)
     ergm, reference = ergm_reference()
-    data = load(str(ROOT / "reference" / "Sampled_data_to_share.csv"))
+    data = load_choice_data(ROOT / "reference" / "Sampled_data_to_share.csv")
 
     started = time.perf_counter()
     start = mple.fit(data).coef

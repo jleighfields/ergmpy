@@ -25,7 +25,7 @@ def main() -> None:
         M = np.loadtxt(CASE_DIR / f"ch_M_{case}.csv", delimiter=",", skiprows=1)
         p = np.loadtxt(CASE_DIR / f"ch_p_{case}.csv", delimiter=",", skiprows=1,
                        ndmin=1)
-        best = min(_timed(p, M) for _ in range(5))
+        best = min(time_shrink(p, M) for _ in range(5))
         g, dt = best[1], best[0]
         rel = abs(g - R_GAMMA[case]) / abs(R_GAMMA[case])
         worst = max(worst, rel)
@@ -35,7 +35,16 @@ def main() -> None:
     print(f"\nworst relative difference: {worst:.2e}")
 
 
-def _timed(p: np.ndarray, M: np.ndarray) -> tuple[float, float]:
+def time_shrink(p: np.ndarray, M: np.ndarray) -> tuple[float, float]:
+    """Times one convex-hull shrink, returning the seconds and the factor.
+
+    Args:
+        p: The point to shrink toward the hull's interior.
+        M: (n_draws, n_statistics) sampled statistics forming the hull.
+
+    Returns:
+        Seconds elapsed, and the shrink factor found.
+    """
     t0 = time.perf_counter()
     g = shrink_into_ch(p, M)
     return time.perf_counter() - t0, g

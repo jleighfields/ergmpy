@@ -14,7 +14,7 @@ from ergmpy.choice import mple
 from ergmpy.choice.predict import (
     TERM_NAMES,
     choice_probabilities,
-    load,
+    load_choice_data,
     top_n_accuracy,
 )
 
@@ -53,7 +53,7 @@ def main() -> None:
     """Fits both datasets and prints the comparison tables."""
     for tag, filename in [("train", "Sampled_data_to_share.csv"),
                           ("test", "test_data_to_share.csv")]:
-        data = load(str(ROOT / "reference" / filename))
+        data = load_choice_data(ROOT / "reference" / filename)
         t0 = time.perf_counter()
         result = mple.fit(data)
         elapsed = time.perf_counter() - t0

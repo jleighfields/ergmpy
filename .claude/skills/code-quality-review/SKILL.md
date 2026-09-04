@@ -58,7 +58,7 @@ shipped code: use what is there, then extend it, and only then write your own.
 Extending is often the right answer — a builder that takes one more argument
 serves the next review too.
 
-Say which you did. "Reused the `ChoiceData` built by `ergmpy.choice.predict.load`"
+Say which you did. "Reused the `ChoiceData` built by `ergmpy.choice.predict.load_choice_data`"
 and "nothing existing produced a dataset in this state, so I built one" are
 both acceptable; building a ninth bespoke fixture beside
 eight existing ones is not, because the next reviewer then has nine to choose

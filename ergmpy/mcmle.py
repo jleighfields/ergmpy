@@ -36,7 +36,7 @@ import scipy.optimize
 from ergmpy import sampler
 from ergmpy.choice.predict import TERM_NAMES, ChoiceData
 from ergmpy.control import MCMLEControl
-from ergmpy.convergence import effective_sample_size, within_tolerance
+from ergmpy.convergence import confidence_test, effective_sample_size
 from ergmpy.convex_hull import shrink_into_ch
 
 log = logging.getLogger(__name__)
@@ -336,7 +336,7 @@ def fit(data: ChoiceData, theta0: np.ndarray,
             interval = max(1, int(interval / control.interval_drop))
             draw_count = int(draw_count * control.interval_drop)
 
-        inside, statistic, threshold = within_tolerance(
+        inside, statistic, threshold = confidence_test(
             g_obs, draws, control.confidence, control.precision,
             n_chains=control.n_chains
         )

@@ -5,8 +5,8 @@ import pytest
 
 from ergmpy.convergence import (
     batch_means_covariance,
+    confidence_test,
     effective_sample_size,
-    within_tolerance,
 )
 
 
@@ -64,7 +64,7 @@ def test_covariance_of_the_mean_shrinks_with_more_draws() -> None:
 def test_the_simulated_mean_passes() -> None:
     """A point at the centre of the draws converges: the gap is exactly zero."""
     draws = np.random.default_rng(5).normal(size=(4000, 3))
-    passed, pvalue, threshold = within_tolerance(draws.mean(axis=0), draws)
+    passed, pvalue, threshold = confidence_test(draws.mean(axis=0), draws)
     assert passed
     assert pvalue < threshold
 
@@ -72,7 +72,7 @@ def test_the_simulated_mean_passes() -> None:
 def test_a_distant_point_fails() -> None:
     """A point outside the tolerance region cannot be declared converged."""
     draws = np.random.default_rng(6).normal(size=(4000, 3))
-    passed, pvalue, threshold = within_tolerance(draws.mean(axis=0) + 3.0, draws)
+    passed, pvalue, threshold = confidence_test(draws.mean(axis=0) + 3.0, draws)
     assert not passed
     assert pvalue > threshold
 
@@ -96,10 +96,10 @@ def test_a_noisier_sample_does_not_become_easier_to_pass() -> None:
     # the comparison would measure the wrong thing. What differs is then only
     # the precision of the mean, and the p-value for non-convergence must be
     # larger where that is worse.
-    _, clean_pvalue, _ = within_tolerance(
+    _, clean_pvalue, _ = confidence_test(
         clean.mean(axis=0) + 0.1 * clean.std(axis=0), clean
     )
-    _, noisy_pvalue, _ = within_tolerance(
+    _, noisy_pvalue, _ = confidence_test(
         noisy.mean(axis=0) + 0.1 * noisy.std(axis=0), noisy
     )
     assert noisy_pvalue > clean_pvalue
@@ -109,7 +109,7 @@ def test_a_non_varying_statistic_is_dropped() -> None:
     """A constant statistic carries no information and must not break the test."""
     draws = np.random.default_rng(7).normal(size=(4000, 3))
     draws = np.column_stack([draws, np.full(4000, 5.0)])
-    passed, _, _ = within_tolerance(draws.mean(axis=0), draws)
+    passed, _, _ = confidence_test(draws.mean(axis=0), draws)
     assert passed
 
 
@@ -158,8 +158,8 @@ def test_the_pvalue_decides_convergence_in_both_directions() -> None:
     draws = np.random.default_rng(11).normal(size=(4000, 3))
     mean = draws.mean(axis=0)
 
-    near_inside, near_p, threshold = within_tolerance(mean + 0.05, draws)
-    far_inside, far_p, _ = within_tolerance(mean + 0.28, draws)
+    near_inside, near_p, threshold = confidence_test(mean + 0.05, draws)
+    far_inside, far_p, _ = confidence_test(mean + 0.28, draws)
 
     # Neither short-circuit fired: both gaps were tested rather than assumed.
     assert 0.0 < near_p < threshold
@@ -180,8 +180,8 @@ def test_a_looser_tolerance_region_accepts_a_larger_gap() -> None:
     draws = np.random.default_rng(11).normal(size=(4000, 3))
     gap = draws.mean(axis=0) + 0.2
 
-    at_ergms_value, _, _ = within_tolerance(gap, draws, precision=0.1)
-    five_times_looser, _, _ = within_tolerance(gap, draws, precision=0.5)
+    at_ergms_value, _, _ = confidence_test(gap, draws, precision=0.1)
+    five_times_looser, _, _ = confidence_test(gap, draws, precision=0.5)
 
     assert not at_ergms_value
     assert five_times_looser
@@ -235,7 +235,7 @@ def test_linearly_dependent_statistics_do_not_block_convergence_forever() -> Non
     singular. The gap below sits well inside it, so the test is worth running.
 
     Today the root find inside `ellipsoid_mahalanobis` lets an error escape,
-    `within_tolerance` catches it, and every iteration reports "not converged"
+    `confidence_test` catches it, and every iteration reports "not converged"
     for a sample that is as converged as it will ever be. The fit then stops
     only by running out of iterations, and nothing in the log distinguishes
     that from a fit that genuinely had further to go -- so the failure is
@@ -250,11 +250,11 @@ def test_linearly_dependent_statistics_do_not_block_convergence_forever() -> Non
     tiny = np.array([0.02, 0.02, 0.06])
     huge = np.array([2.0, 2.0, 6.0])
 
-    passed, pvalue, threshold = within_tolerance(mean + tiny, draws)
+    passed, pvalue, threshold = confidence_test(mean + tiny, draws)
     assert passed
     assert pvalue < threshold
 
     # The same rank deficiency must still refuse a gap that is genuinely far
     # out, so the fix cannot be to accept whatever it cannot measure.
-    refused, _, _ = within_tolerance(mean + huge, draws)
+    refused, _, _ = confidence_test(mean + huge, draws)
     assert not refused

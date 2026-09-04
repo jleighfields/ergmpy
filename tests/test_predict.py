@@ -12,7 +12,7 @@ import polars as pl
 from ergmpy.choice.predict import (
     TERM_NAMES,
     choice_probabilities,
-    load,
+    load_choice_data,
     top_n_accuracy,
 )
 
@@ -78,7 +78,7 @@ def test_ragged_choice_sets_are_rejected(tmp_path) -> None:
     path.write_text("\n".join(rows) + "\n")
 
     try:
-        load(str(path))
+        load_choice_data(path)
     except ValueError:
         return
     raise AssertionError("a ragged choice set was accepted")

@@ -60,11 +60,30 @@ def _(mo):
 
 
 @app.cell
-def _(ROOT):
-    from ergmpy.choice.predict import load
+def _(ROOT, mo, pl):
+    raw_rows = pl.read_csv(ROOT / "reference" / "Sampled_data_to_share.csv").head(6)
 
-    train = load(str(ROOT / "reference" / "Sampled_data_to_share.csv"))
-    return load, train
+    mo.vstack([
+        mo.md(
+            "The file is long format: one row per customer-alternative pair. These "
+            "six rows are one customer's whole consideration set — `rspd_id` "
+            "identifies the customer, `model_id` the product, `purchase` marks the "
+            "one they bought, and `V1`-`V4` are that product's attributes. "
+            "`load_choice_data` reshapes this into the arrays the estimators use, "
+            "numbering products by first appearance so they match the node order "
+            "the R script assigns."
+        ),
+        raw_rows,
+    ])
+    return
+
+
+@app.cell
+def _(ROOT):
+    from ergmpy.choice.predict import load_choice_data
+
+    train = load_choice_data(ROOT / "reference" / "Sampled_data_to_share.csv")
+    return load_choice_data, train
 
 
 @app.cell
@@ -470,10 +489,10 @@ def _(mo):
 
 
 @app.cell
-def _(ROOT, load, np, python_estimates, time):
+def _(ROOT, load_choice_data, np, python_estimates, time):
     from ergmpy.choice.predict import choice_probabilities, top_n_accuracy
 
-    test_set = load(str(ROOT / "reference" / "test_data_to_share.csv"))
+    test_set = load_choice_data(ROOT / "reference" / "test_data_to_share.csv")
     theta = np.asarray(python_estimates)
 
     predict_start = time.perf_counter()

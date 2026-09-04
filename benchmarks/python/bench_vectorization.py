@@ -17,7 +17,7 @@ from pathlib import Path
 import numpy as np
 
 from ergmpy import sampler
-from ergmpy.choice.predict import load
+from ergmpy.choice.predict import load_choice_data
 
 ROOT = Path(__file__).resolve().parents[2]
 STAR2 = 0.01
@@ -118,7 +118,7 @@ def time_numpy_across_chains(data, choice_sets, linear, n_chains: int,
 
 def main() -> None:
     """Runs each formulation and prints milliseconds per sweep."""
-    data = load(str(ROOT / "reference" / "Sampled_data_to_share.csv"))
+    data = load_choice_data(ROOT / "reference" / "Sampled_data_to_share.csv")
     choice_sets = np.ascontiguousarray(data.choice_sets)
     linear = np.ascontiguousarray(data.design @ np.full(7, 0.3))
     order = np.arange(choice_sets.shape[0], dtype=np.int32)

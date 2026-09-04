@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from ergmpy.choice.predict import ChoiceData, load
+from ergmpy.choice.predict import ChoiceData, load_choice_data
 
 REFERENCE = Path(__file__).resolve().parents[1] / "reference"
 RECORDED_R = Path(__file__).resolve().parents[1] / "results"
@@ -18,13 +18,13 @@ RECORDED_R = Path(__file__).resolve().parents[1] / "results"
 @pytest.fixture(scope="session")
 def train() -> ChoiceData:
     """The training dataset."""
-    return load(str(REFERENCE / "Sampled_data_to_share.csv"))
+    return load_choice_data(REFERENCE / "Sampled_data_to_share.csv")
 
 
 @pytest.fixture(scope="session")
 def test_set() -> ChoiceData:
     """The held-out dataset."""
-    return load(str(REFERENCE / "test_data_to_share.csv"))
+    return load_choice_data(REFERENCE / "test_data_to_share.csv")
 
 
 @pytest.fixture(scope="session")

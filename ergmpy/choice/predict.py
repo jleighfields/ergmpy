@@ -21,6 +21,8 @@ makes each alternative O(1) instead of a full network traversal, and the whole
 customer x alternative grid a single vectorized expression.
 """
 
+from pathlib import Path
+
 import numpy as np
 import polars as pl
 
@@ -57,7 +59,7 @@ class ChoiceData:
         self.n_products = design.shape[0]
 
 
-def load(path: str) -> ChoiceData:
+def load_choice_data(path: str | Path) -> ChoiceData:
     """Reads a reference CSV into choice sets, a design matrix, and degrees.
 
     Product indices follow first-appearance order in the file, matching the

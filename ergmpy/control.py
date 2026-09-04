@@ -34,7 +34,7 @@ class MCMLEControl:
         confidence: Level of the joint confidence region used to stop.
             `MCMLE.confidence`.
         precision: Scales the tolerance region the gap must sit inside,
-            passed to `ergmpy.convergence.within_tolerance` as its `precision`.
+            passed to `ergmpy.convergence.confidence_test` as its `precision`.
             `MCMLE.MCMC.precision`, which `results/r/fit_star.rds` recorded as
             0.1 for the converged reference fit.
         target_ess: Effective sample size an iteration aims for before testing

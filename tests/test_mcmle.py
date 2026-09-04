@@ -14,7 +14,7 @@ import pytest
 from ergmpy import mcmle
 from ergmpy.choice.predict import TERM_NAMES
 from ergmpy.control import MCMLEControl
-from ergmpy.convergence import within_tolerance
+from ergmpy.convergence import confidence_test
 from ergmpy.mcmle import (
     geyer_thompson_step,
     observed_statistics,
@@ -100,12 +100,12 @@ def test_the_step_stops_short_of_the_hull_boundary(monkeypatch) -> None:
     """
     captured = {}
 
-    def fake_within_tolerance(observed, draws, confidence, precision, n_chains):
+    def fake_confidence_test(observed, draws, confidence, precision, n_chains):
         captured["precision"] = precision
         return False, 1.0, 1.0 - confidence
 
     monkeypatch.setattr(mcmle, "shrink_into_ch", lambda observed, draws: 1.0)
-    monkeypatch.setattr(mcmle, "within_tolerance", fake_within_tolerance)
+    monkeypatch.setattr(mcmle, "confidence_test", fake_confidence_test)
     monkeypatch.setattr(mcmle, "simulate",
                         lambda *a, **k: (np.random.default_rng(5).normal(size=(40, 8)),
                                          np.zeros((1, 3), dtype=np.int32)))
@@ -129,11 +129,11 @@ def test_the_fit_tests_convergence_at_ergms_tolerance(monkeypatch) -> None:
     """
     captured = {}
 
-    def fake_within_tolerance(observed, draws, confidence, precision, n_chains):
+    def fake_confidence_test(observed, draws, confidence, precision, n_chains):
         captured["precision"] = precision
         return True, 0.0, 1.0 - confidence
 
-    monkeypatch.setattr(mcmle, "within_tolerance", fake_within_tolerance)
+    monkeypatch.setattr(mcmle, "confidence_test", fake_confidence_test)
     monkeypatch.setattr(mcmle, "simulate",
                         lambda *a, **k: (np.random.default_rng(6).normal(size=(40, 8)),
                                          np.zeros((1, 3), dtype=np.int32)))
@@ -168,7 +168,7 @@ def test_the_convergence_test_accepts_ergms_converged_estimates(
     gap_in_sd = np.abs(g_obs - draws.mean(axis=0)) / draws.std(axis=0)
     assert gap_in_sd.max() < 1.0
 
-    passed, pvalue, threshold = within_tolerance(
+    passed, pvalue, threshold = confidence_test(
         g_obs, draws, precision=ERGM_MCMC_PRECISION
     )
     assert passed
@@ -194,7 +194,7 @@ def test_the_convergence_test_refuses_a_clearly_wrong_parameter(
     star2_gap = (abs(g_obs[-1] - draws[:, -1].mean()) / draws[:, -1].std())
     assert star2_gap > 10.0
 
-    passed, pvalue, threshold = within_tolerance(
+    passed, pvalue, threshold = confidence_test(
         g_obs, draws, precision=ERGM_MCMC_PRECISION
     )
     assert not passed

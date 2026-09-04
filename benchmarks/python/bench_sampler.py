@@ -12,7 +12,7 @@ import numpy as np
 
 from ergmpy import sampler
 from ergmpy.choice import mple
-from ergmpy.choice.predict import load, softmax_utilities
+from ergmpy.choice.predict import load_choice_data, softmax_utilities
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -26,7 +26,7 @@ def setup(theta: np.ndarray):
     Returns:
         choice_sets, current, degree, linear, theta_star2, design.
     """
-    data = load(str(ROOT / "reference" / "Sampled_data_to_share.csv"))
+    data = load_choice_data(ROOT / "reference" / "Sampled_data_to_share.csv")
     linear = data.design @ theta[:7]
     return (np.ascontiguousarray(data.choice_sets),
             data.chosen.copy().astype(np.int32),
@@ -63,7 +63,7 @@ def check_marginals(choice_sets, linear, n_sweeps: int = 2000) -> float:
 
 def main() -> None:
     """Fits MPLE for a realistic theta, then benchmarks both kernels."""
-    data = load(str(ROOT / "reference" / "Sampled_data_to_share.csv"))
+    data = load_choice_data(ROOT / "reference" / "Sampled_data_to_share.csv")
     theta = mple.fit(data).coef
     print(f"theta from MPLE: star2 = {theta[7]:.6f}\n")
 

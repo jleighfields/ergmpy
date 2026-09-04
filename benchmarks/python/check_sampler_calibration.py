@@ -16,7 +16,7 @@ from pathlib import Path
 import numpy as np
 from published import published_estimates
 
-from ergmpy.choice.predict import TERM_NAMES, load
+from ergmpy.choice.predict import TERM_NAMES, load_choice_data
 from ergmpy.mcmle import observed_statistics, simulate
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -26,7 +26,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 def main() -> None:
     """Simulates at the published theta and reports the standardized gaps."""
-    data = load(str(ROOT / "reference" / "Sampled_data_to_share.csv"))
+    data = load_choice_data(ROOT / "reference" / "Sampled_data_to_share.csv")
     g_obs = observed_statistics(data)
 
     np.random.seed(123)

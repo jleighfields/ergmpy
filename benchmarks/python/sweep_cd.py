@@ -12,7 +12,7 @@ import numpy as np
 
 from ergmpy import contrastive_divergence as cd
 from ergmpy.choice import mple
-from ergmpy.choice.predict import load
+from ergmpy.choice.predict import load_choice_data
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -22,7 +22,7 @@ R_COEF = np.array([-3.0451052, -0.0358261, 1.5947824, 1.2249765,
 
 def main() -> None:
     """Runs CD at several excursion lengths and reports the seed quality."""
-    data = load(str(ROOT / "reference" / "Sampled_data_to_share.csv"))
+    data = load_choice_data(ROOT / "reference" / "Sampled_data_to_share.csv")
     start = mple.fit(data).coef
     print(f"{'n_updates':>10}{'sweeps':>8}{'iters':>7}{'sec':>7}"
           f"{'max|diff|':>11}{'b2star2':>11}")

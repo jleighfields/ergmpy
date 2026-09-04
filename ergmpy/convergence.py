@@ -9,7 +9,7 @@ deviation understates the uncertainty in their mean.
 
 `ergm` terminates on a confidence statement instead -- `MCMLE.termination =
 "confidence"` at `MCMLE.confidence = 0.99` -- declaring convergence only when
-it can rule out non-convergence at that level. `within_tolerance` follows that
+it can rule out non-convergence at that level. `confidence_test` follows that
 direction, and its docstring sets out where it departs from `ergm`.
 
 Two pieces are needed. The covariance of the *mean* must account for the
@@ -100,7 +100,7 @@ def effective_sample_size(draws: np.ndarray, n_chains: int = 1) -> np.ndarray:
     return np.where(inflated > 0, n_draws * marginal / inflated, float(n_draws))
 
 
-def within_tolerance(observed: np.ndarray, draws: np.ndarray,
+def confidence_test(observed: np.ndarray, draws: np.ndarray,
                      confidence: float = 0.99, precision: float = 0.1,
                      n_chains: int = 1) -> tuple[bool, float, float]:
     """Runs `ergm`'s confidence test on the current sample.

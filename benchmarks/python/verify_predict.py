@@ -13,7 +13,7 @@ import polars as pl
 from ergmpy.choice.predict import (
     TERM_NAMES,
     choice_probabilities,
-    load,
+    load_choice_data,
     top_n_accuracy,
 )
 
@@ -34,10 +34,10 @@ def main() -> None:
     theta_star2 = lookup["b2star2"]
 
     t0 = time.perf_counter()
-    data = load(str(ROOT / "reference" / "test_data_to_share.csv"))
+    data = load_choice_data(ROOT / "reference" / "test_data_to_share.csv")
     load_s = time.perf_counter() - t0
 
-    best = min(_timed(data, theta_linear, theta_star2) for _ in range(5))
+    best = min(time_prediction(data, theta_linear, theta_star2) for _ in range(5))
     predict_s, probs = best
 
     # Most columns are all-zero for the scored rows, which defeats polars'
@@ -60,14 +60,22 @@ def main() -> None:
     print()
     print(f"python load:           {load_s * 1000:8.1f} ms")
     print(f"python predict (5000): {predict_s * 1000:8.1f} ms  (best of 5)")
-    print(f"R predict (200):       {148950:8.1f} ms")
-    print(f"R predict (5000, proj):{148950 * 25:8.1f} ms")
     print()
     for n in (1, 2, 3):
         print(f"top-{n} accuracy (5000 customers): {top_n_accuracy(data, probs, n):.4f}")
 
 
-def _timed(data, theta_linear, theta_star2) -> tuple[float, np.ndarray]:
+def time_prediction(data, theta_linear, theta_star2) -> tuple[float, np.ndarray]:
+    """Times one scoring pass over every customer's consideration set.
+
+    Args:
+        data: The dataset to score.
+        theta_linear: (7,) attribute coefficients.
+        theta_star2: The b2star2 coefficient.
+
+    Returns:
+        Seconds elapsed, and the (n_customers, set_size) probabilities.
+    """
     t0 = time.perf_counter()
     p = choice_probabilities(data, theta_linear, theta_star2)
     return time.perf_counter() - t0, p
