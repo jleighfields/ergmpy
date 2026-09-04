@@ -26,6 +26,7 @@ References:
         Computational and Graphical Statistics, 21(4), 920-939.
 """
 
+import dataclasses
 from concurrent.futures import ProcessPoolExecutor
 
 import numpy as np
@@ -34,6 +35,7 @@ from scipy.special import logsumexp
 
 from ergmpy import sampler
 from ergmpy.choice.predict import ChoiceData
+from ergmpy.control import MCMLEControl
 from ergmpy.convergence import effective_sample_size, within_confidence_region
 from ergmpy.convex_hull import shrink_into_ch
 
@@ -50,18 +52,22 @@ class MCMLEResult:
         n_iterations: Outer iterations actually run.
         converged: Whether the convergence test passed before the cap.
         history: One dict per iteration recording its step length, the
-            confidence statistic and threshold, and the smallest effective
-            sample size across statistics.
+            confidence statistic and threshold, the smallest effective sample
+            size across statistics, and the interval and draw count it settled
+            on.
+        control: The settings the fit ran under.
     """
 
     def __init__(self, coef: np.ndarray, std_error: np.ndarray, n_iterations: int,
-                 converged: bool, history: list[dict]) -> None:
+                 converged: bool, history: list[dict],
+                 control: MCMLEControl) -> None:
         """Stores the estimates; the class docstring describes each attribute."""
         self.coef = coef
         self.std_error = std_error
         self.n_iterations = n_iterations
         self.converged = converged
         self.history = history
+        self.control = control
 
     def summary(self) -> str:
         """Formats the estimates the way ergm's summary does.
@@ -223,79 +229,70 @@ def geyer_thompson_step(theta_t: np.ndarray, draws: np.ndarray,
     return theta_t + delta
 
 
-def fit(data: ChoiceData, theta0: np.ndarray, max_iterations: int = 200,
-        n_draws: int = 1250, burn_in: int = 1600, thin: int = 200,
-        confidence: float = 0.99, n_chains: int = 4,
-        step_margin: float = 0.05, target_ess: float = 64.0,
-        max_resamples: int = 4, seed: int = 123) -> MCMLEResult:
+def fit(data: ChoiceData, theta0: np.ndarray,
+        control: MCMLEControl | None = None, **overrides: object) -> MCMLEResult:
     """Fits the model by Monte Carlo maximum likelihood.
 
     Stops on the same criterion `ergm` uses -- `MCMLE.termination =
-    "confidence"` at `MCMLE.confidence = 0.99` -- asking whether the observed
-    statistics lie inside a joint confidence region around the simulated mean,
-    with the covariance of that mean estimated by batch means so the chain's
-    autocorrelation is accounted for.
-
-    The defaults match what the reference R script asks `control.ergm` for,
-    converted from proposals to sweeps at 5,000 proposals per sweep: its
-    `MCMC.samplesize = 1250`, `MCMC.interval = 1e6` (200 sweeps),
-    `MCMC.burnin = 8e6` (1,600 sweeps), `parallel = 4`, `seed = 123`, and
-    `MCMLE.maxit = 200` as its published output reports.
-
-    `ergm` also adapts: it targets an effective sample size of 64 per
-    iteration and lengthens its interval when a draw falls short, so its
-    per-iteration effort varies. This does the same, recording the interval
-    each iteration ended up using in `history`.
+    "confidence"` -- asking whether the observed statistics lie inside a joint
+    confidence region around the simulated mean, with the covariance of that
+    mean estimated by batch means so the chain's autocorrelation is accounted
+    for.
 
     Args:
         data: The dataset to fit.
         theta0: (8,) starting parameter, normally a contrastive-divergence seed.
-        max_iterations: Cap on outer iterations, matching `MCMLE.maxit`.
-        n_draws: Retained draws per iteration, divided among the chains.
-        burn_in: Sweeps discarded before the first draw of each chain.
-        thin: Sweeps between retained draws.
-        confidence: Level of the joint region, matching `MCMLE.confidence`.
-        n_chains: Independent chains per iteration; the R script uses 4.
-        step_margin: Fraction by which to stop short of the convex hull's
-            boundary, matching `MCMLE.steplength.margin`. Stepping exactly to
-            the boundary leaves the target on the edge of the region where the
-            importance-sampling approximation still has support.
-        target_ess: Effective sample size to reach before testing convergence,
-            matching `MCMLE.effectiveSize`. When a draw falls short, the
-            iteration resamples with a longer interval rather than testing on
-            a sample that cannot support the test.
-        max_resamples: How many times one iteration may extend its sampling
-            before proceeding with what it has.
-        seed: Base seed for the sampler.
+        control: Run settings; defaults to `MCMLEControl()`, whose defaults
+            match what the reference R script asks `control.ergm` for.
+            `MCMLEControl.from_ergm_settings` builds one from what a fitted
+            ergm object actually used.
+        **overrides: Individual `MCMLEControl` fields to replace, for a caller
+            that wants one setting changed without constructing a control.
 
     Returns:
-        The fitted MCMLEResult.
+        The fitted MCMLEResult, carrying the control it ran under.
+
+    Raises:
+        TypeError: If an override names no field on `MCMLEControl`, rather
+            than being silently ignored.
     """
+    control = control or MCMLEControl()
+    if overrides:
+        unknown = set(overrides) - set(control.to_dict())
+        if unknown:
+            raise TypeError(f"not MCMLEControl fields: {sorted(unknown)}")
+        control = dataclasses.replace(control, **overrides)
+
     g_obs = observed_statistics(data)
     theta = np.asarray(theta0, dtype=float).copy()
     state = None
     history: list[dict] = []
     converged = False
 
-    for iteration in range(1, max_iterations + 1):
-        # Lengthen the interval until the draws are worth target_ess
-        # independent ones. A confidence test on a sample that autocorrelation
-        # has made smaller than it looks is the failure this prevents.
-        interval = thin
-        for _ in range(max_resamples):
-            draws, state = simulate(data, theta, n_draws, burn_in, interval, state,
-                                    n_chains=n_chains, seed=seed + 1000 * iteration)
-            smallest_ess = float(effective_sample_size(draws, n_chains=n_chains).min())
-            if smallest_ess >= target_ess:
+    for iteration in range(1, control.max_iterations + 1):
+        # Resample until the draws are worth target_ess independent ones,
+        # shortening the interval and taking proportionally more draws each
+        # time. A confidence test on a sample that autocorrelation has made
+        # smaller than it looks is the failure this prevents.
+        interval, draw_count = control.thin, control.n_draws
+        for _ in range(control.max_resamples):
+            draws, state = simulate(data, theta, draw_count, control.burn_in,
+                                    interval, state, n_chains=control.n_chains,
+                                    seed=control.seed + 1000 * iteration)
+            smallest_ess = float(
+                effective_sample_size(draws, n_chains=control.n_chains).min()
+            )
+            if smallest_ess >= control.target_ess:
                 break
-            interval *= 2
+            interval = max(1, int(interval / control.interval_drop))
+            draw_count = int(draw_count * control.interval_drop)
 
         inside, statistic, threshold = within_confidence_region(
-            g_obs, draws, confidence, n_chains=n_chains
+            g_obs, draws, control.confidence, n_chains=control.n_chains
         )
         record = {"iteration": iteration, "statistic": statistic,
                   "threshold": threshold, "min_ess": smallest_ess,
-                  "interval": interval}
+                  "interval": interval, "n_draws": draw_count}
 
         if inside:
             converged = True
@@ -303,13 +300,15 @@ def fit(data: ChoiceData, theta0: np.ndarray, max_iterations: int = 200,
             break
 
         # Stop short of the hull boundary, as MCMLE.steplength.margin does.
-        gamma = min(1.0, shrink_into_ch(g_obs, draws)) * (1.0 - step_margin)
+        gamma = min(1.0, shrink_into_ch(g_obs, draws)) * (1.0 - control.step_margin)
         target = gamma * g_obs + (1.0 - gamma) * draws.mean(axis=0)
         theta = geyer_thompson_step(theta, draws, target)
         history.append({**record, "step_length": float(gamma)})
 
-    draws, _ = simulate(data, theta, n_draws, burn_in, thin, state,
-                        n_chains=n_chains, seed=seed)
+    draws, _ = simulate(data, theta, control.n_draws, control.burn_in,
+                        control.thin, state, n_chains=control.n_chains,
+                        seed=control.seed)
     covariance = np.cov(draws, rowvar=False)
     std_error = np.sqrt(np.diag(np.linalg.pinv(covariance)))
-    return MCMLEResult(theta, std_error, len(history), converged, history)
+    return MCMLEResult(theta, std_error, len(history), converged, history,
+                       control)

@@ -13,7 +13,9 @@ object by `benchmarks/r/export_control_settings.R`, and the signature of
 | Setting | `ergm` | `ergmpy` |
 |---|---|---|
 | Outer iteration cap | `MCMLE.maxit = 200` | `max_iterations = 200` |
-| Effective sample size target | `MCMLE.effectiveSize = 64` | `target_ess = 64`, lengthening the interval when short |
+| Effective sample size target | `MCMC.effectiveSize = 895` | `target_ess = 895` |
+| Resampling on a short draw | shorten interval by `MCMLE.effectiveSize.interval_drop = 2`, take more draws | same |
+| Resampling attempts | `MCMC.effectiveSize.maxruns = 16` | `max_resamples = 16` |
 | Step-length margin | `MCMLE.steplength.margin = 0.05` | `step_margin = 0.05` |
 | Draws retained per iteration | `MCMC.samplesize = 1250` | `n_draws = 1250` |
 | Between retained draws | `MCMC.interval = 1e6` proposals | `thin = 200` sweeps |
@@ -26,9 +28,28 @@ object by `benchmarks/r/export_control_settings.R`, and the signature of
 
 ## Not matched, and why
 
+`ergm` reaches its sample size through a tuned controller with around fifteen
+interacting parameters. The targets and the direction of adaptation are
+matched above; the controller itself is not, and reproducing it would mean
+porting a heuristic rather than a statistical method. The unmatched parts:
+
+| Setting | What it does |
+|---|---|
+| `MCMLE.confidence.boost = 2`, `.lag = 4`, `.threshold = 1` | multiplies the sample size when the confidence statistic stops improving over four iterations |
+| `MCMC.effectiveSize.damp = 10` | damps the adaptation so one short draw does not swing the sample size far |
+| `MCMLE.sampsize.boost.pow = 0.5` | the exponent relating a boost in sample size to the shortfall |
+| `MCMC.effectiveSize.burnin.{min,max,nmin,nmax,pval,scl}` | adapts the burn-in by testing when the chain has forgotten its start |
+| `MCMLE.dampening`, `CD.dampening` | off by default in both |
+
+Each iteration records the interval, draw count and achieved effective sample
+size it ended with, so a run can be compared against `ergm`'s recorded
+`MCMC.interval` and `MCMC.samplesize` rather than assumed equivalent.
+
+
 
 | Setting | `ergm` | `ergmpy` | Why |
 |---|---|---|---|
+| Sampling controller | fifteen-parameter adaptive scheme, see above | targets and direction only | Reproducing the controller means porting a heuristic, not a method. Both record what they ended up using. |
 | Contrastive divergence | `CD.nsteps = 8` steps per draw | `n_updates = 50000` | Same unit — under this constraint `ergm` proposes with `CondB1Degree`, which moves one customer's edge, exactly what `n_updates` counts. But matching the *number* does not match the behaviour: at `n_updates = 8` this implementation is inert at any draw count (measured: 0.90 from a start of 1.19 at 300 draws, and no movement at all at 40,000). Its objective needs the draws to move appreciably before the gradient is non-zero, where `ergm`'s extracts signal from much smaller perturbations. This is a difference in how the two CD objectives are formulated, not in settings. |
 
 CD only produces a starting point; both implementations then run the same

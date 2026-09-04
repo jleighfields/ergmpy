@@ -255,3 +255,142 @@ Convergence detected. Stopping.
 Finished CD.
 Starting Monte Carlo maximum likelihood estimation (MCMLE):
 Iteration 1 of at most 200:
+1 Optimizing with step length 0.0288.
+The log-likelihood improved by 4.0257.
+Estimating equations are not within tolerance region.
+Iteration 2 of at most 200:
+1 Optimizing with step length 0.0249.
+The log-likelihood improved by 2.9796.
+Estimating equations are not within tolerance region.
+Iteration 3 of at most 200:
+1 Optimizing with step length 0.0340.
+The log-likelihood improved by 3.9433.
+Estimating equations are not within tolerance region.
+Iteration 4 of at most 200:
+1 Optimizing with step length 0.0271.
+The log-likelihood improved by 2.2321.
+Estimating equations are not within tolerance region.
+Iteration 5 of at most 200:
+1 Optimizing with step length 0.0297.
+The log-likelihood improved by 3.4944.
+Estimating equations are not within tolerance region.
+Iteration 6 of at most 200:
+1 Optimizing with step length 0.0356.
+The log-likelihood improved by 2.5889.
+Estimating equations are not within tolerance region.
+Iteration 7 of at most 200:
+1 Optimizing with step length 0.0416.
+The log-likelihood improved by 3.9722.
+Estimating equations are not within tolerance region.
+Iteration 8 of at most 200:
+1 Optimizing with step length 0.0350.
+The log-likelihood improved by 2.8120.
+Estimating equations are not within tolerance region.
+Iteration 9 of at most 200:
+1 Optimizing with step length 0.0405.
+The log-likelihood improved by 3.5628.
+Estimating equations are not within tolerance region.
+Iteration 10 of at most 200:
+1 Optimizing with step length 0.0375.
+The log-likelihood improved by 2.7417.
+Estimating equations are not within tolerance region.
+Iteration 11 of at most 200:
+1 Optimizing with step length 0.0453.
+The log-likelihood improved by 2.5336.
+Estimating equations are not within tolerance region.
+Iteration 12 of at most 200:
+1 Optimizing with step length 0.0529.
+The log-likelihood improved by 2.9488.
+Estimating equations are not within tolerance region.
+Iteration 13 of at most 200:
+1 Optimizing with step length 0.0741.
+The log-likelihood improved by 3.0271.
+Estimating equations are not within tolerance region.
+Iteration 14 of at most 200:
+1 Optimizing with step length 0.0880.
+The log-likelihood improved by 3.1660.
+Estimating equations are not within tolerance region.
+Iteration 15 of at most 200:
+1 Optimizing with step length 0.0876.
+The log-likelihood improved by 2.4868.
+Estimating equations are not within tolerance region.
+Iteration 16 of at most 200:
+1 Optimizing with step length 0.1200.
+The log-likelihood improved by 3.5138.
+Estimating equations are not within tolerance region.
+Iteration 17 of at most 200:
+1 Optimizing with step length 0.1270.
+The log-likelihood improved by 3.5744.
+Estimating equations are not within tolerance region.
+Iteration 18 of at most 200:
+1 Optimizing with step length 0.1963.
+The log-likelihood improved by 3.4751.
+Estimating equations are not within tolerance region.
+Iteration 19 of at most 200:
+1 Optimizing with step length 0.2167.
+The log-likelihood improved by 3.2138.
+Estimating equations are not within tolerance region.
+Iteration 20 of at most 200:
+1 Optimizing with step length 0.3412.
+The log-likelihood improved by 3.0842.
+Estimating equations are not within tolerance region.
+Iteration 21 of at most 200:
+1 Optimizing with step length 0.6603.
+The log-likelihood improved by 2.8546.
+Estimating equations are not within tolerance region.
+Iteration 22 of at most 200:
+1 Optimizing with step length 0.8446.
+The log-likelihood improved by 2.3696.
+Estimating equations are not within tolerance region.
+Iteration 23 of at most 200:
+1 Optimizing with step length 1.0000.
+The log-likelihood improved by 0.9854.
+Estimating equations are not within tolerance region.
+Iteration 24 of at most 200:
+1 Optimizing with step length 1.0000.
+The log-likelihood improved by 1.1871.
+Estimating equations are not within tolerance region.
+Iteration 25 of at most 200:
+1 Optimizing with step length 1.0000.
+The log-likelihood improved by 0.2142.
+Estimating equations are not within tolerance region.
+Iteration 26 of at most 200:
+1 Optimizing with step length 1.0000.
+The log-likelihood improved by 0.1204.
+Estimating equations are not within tolerance region.
+Iteration 27 of at most 200:
+1 Optimizing with step length 1.0000.
+The log-likelihood improved by 0.1821.
+Estimating equations are not within tolerance region.
+Estimating equations did not move closer to tolerance region more than 1 time(s) in 4 steps; increasing sample size.
+Iteration 28 of at most 200:
+1 Optimizing with step length 1.0000.
+The log-likelihood improved by 0.0875.
+Convergence test p-value: 0.9042. Not converged with 99% confidence; increasing sample size.
+Iteration 29 of at most 200:
+1 Optimizing with step length 1.0000.
+The log-likelihood improved by 0.2687.
+Estimating equations are not within tolerance region.
+Iteration 30 of at most 200:
+1 Optimizing with step length 1.0000.
+The log-likelihood improved by 0.0646.
+Convergence test p-value: 0.6874. Not converged with 99% confidence; increasing sample size.
+Iteration 31 of at most 200:
+1 Optimizing with step length 1.0000.
+The log-likelihood improved by 0.0180.
+Convergence test p-value: 0.0044. Converged with 99% confidence.
+Finished MCMLE.
+This model was fit using MCMC.  To examine model diagnostics and check
+for degeneracy, use the mcmc.diagnostics() function.
+[17:50:01] 10_fit_test_structure_1iter: 1074.67 s
+Warning message:
+In ergm.checkconstraints.model(model, proposal, control$init) :
+  The specified model's sample space constraint holds statistic(s) edges  constant. They will be ignored.
+[17:50:02] 11_prediction_loop: 0.74 s
+NULL
+Warning message:
+In .Deprecate_once(msg = "Using x$coef to access the coefficient vector of an ergm is deprecated. Use coef(x) instead.") :
+  Using x$coef to access the coefficient vector of an ergm is deprecated. Use coef(x) instead.
+[17:50:02] 12_topn_eval: 0.01 s
+NULL
+top-3 accuracy: 1 

@@ -342,6 +342,62 @@ def _(mo):
 
 @app.cell
 def _(mo):
+    mo.md(
+        r"""
+        ### The settings both sides run under
+
+        A comparison against `ergm` only means something if both were asked for
+        the same thing, so every knob lives on one object that names its
+        `control.ergm` counterpart. `ergm` counts MCMC effort in proposals and
+        this counts it in sweeps; one sweep is one update per customer, so
+        5,000 proposals here.
+        """
+    )
+    return
+
+
+@app.cell
+def _():
+    from ergmpy.control import MCMLEControl
+
+    control = MCMLEControl()
+    return MCMLEControl, control
+
+
+@app.cell
+def _(control, mo):
+    mo.md(f"```\n{control.describe()}\n```")
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md(
+        r"""
+        Four of those come from the R script's own `control.ergm` call
+        (`MCMC.samplesize`, `MCMC.interval`, `parallel`, `seed`), one from the
+        authors' published output (`MCMLE.maxit = 200`; their committed script
+        says 30, at which `ergm` reports the fit did not converge), and the
+        rest are `ergm`'s defaults carried over.
+
+        Two are `ergm`'s own computations rather than fixed numbers, and it
+        adapts both during a fit: `MCMC.effectiveSize`, which it scales up from
+        a base of 64 to 895 for this model, and `MCMC.burnin`. To match a
+        specific run rather than the request,
+        `MCMLEControl.from_ergm_settings` reads the settings a fitted `ergm`
+        object recorded — which is what `results/r/control_settings.csv` holds.
+
+        `docs/settings-comparison.md` lists what matches, what does not, and
+        why. The largest unmatched piece is `ergm`'s sampling controller, about
+        fifteen interacting parameters; the targets and the direction of
+        adaptation are matched, the controller itself is not.
+        """
+    )
+    return
+
+
+@app.cell
+def _(mo):
     run_full_fit = mo.ui.checkbox(
         value=False,
         label="Run the full fit now (about 95 seconds)",
@@ -358,8 +414,7 @@ def _(mple_fit, run_full_fit, time, train):
         fit_start = time.perf_counter()
         cd_seed, _cd_history = cd.fit(train, mple_fit.coef, max_iterations=60,
                                       n_draws=300, n_updates=50000)
-        mcmle_fit = mcmle.fit(train, cd_seed, max_iterations=120, n_draws=600,
-                              burn_in=100, thin=30, tolerance=0.15)
+        mcmle_fit = mcmle.fit(train, cd_seed, control)
         fit_seconds = time.perf_counter() - fit_start
     else:
         mcmle_fit = None
@@ -369,7 +424,7 @@ def _(mple_fit, run_full_fit, time, train):
 
 @app.cell
 def _(ROOT, mcmle_fit, mo, np, pl):
-    ergm_converged = pl.read_csv(ROOT / "results" / "r" / "mcmle_star_maxit30.csv")
+    ergm_converged = pl.read_csv(ROOT / "results" / "r" / "mcmle_star.csv")
     terms = ["b2cov.V1", "b2cov.V2", "b2cov.V3", "b2factor.V4.2",
              "b2factor.V4.3", "b2factor.V4.4", "b2factor.V4.5", "b2star2"]
     ergm_lookup = dict(
@@ -378,9 +433,10 @@ def _(ROOT, mcmle_fit, mo, np, pl):
             strict=True)
     )
 
-    # Recorded in results/python/full_recipe_mple_cd_mcmle.log when the fit ran.
-    recorded_python = [-3.043502, -0.039734, 1.595903, 1.229273,
-                       2.209014, 1.221944, 1.183921, 0.005792]
+    # Recorded in results/python/matched_settings_fit.log, run under the
+    # control shown above against ergm's converged maxit=200 fit.
+    recorded_python = [-3.045303, -0.037094, 1.594103, 1.232792,
+                       2.212373, 1.221516, 1.189163, 0.005783]
     python_estimates = (
         list(mcmle_fit.coef) if mcmle_fit is not None else recorded_python
     )
