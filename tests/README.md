@@ -16,6 +16,7 @@ No test can pass by agreeing with the code it checks:
 | `test_convex_hull.py` | squares whose shrink factor is `1/k` by construction, plus six cases saved from `ergm` |
 | `test_sampler.py` | the closed-form softmax that holds once `theta_star2` is zero and the customers decouple |
 | `test_predict.py` | the probability matrix `ergm` produced, committed as CSV |
+| `test_reproducibility.py` | a second run at the same seed, and a run at a different one |
 | `test_convergence.py` | chains whose autocorrelation is known by construction, and constant-level chains where a batch mean can only take one value |
 | `test_control.py` | the settings a fitted `ergm` object recorded, transcribed with the `control.ergm` name each one mirrors |
 | `test_hotelling.py` | ellipsoids whose distance-to-boundary is available in closed form, and `scipy.stats.f` for the tail |
