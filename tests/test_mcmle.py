@@ -12,9 +12,14 @@ import polars as pl
 import pytest
 
 from ergmpy import mcmle
+from ergmpy.choice.predict import TERM_NAMES
 from ergmpy.control import MCMLEControl
 from ergmpy.convergence import within_tolerance
-from ergmpy.mcmle import TERM_NAMES, geyer_thompson_step, observed_statistics, simulate
+from ergmpy.mcmle import (
+    geyer_thompson_step,
+    observed_statistics,
+    simulate,
+)
 
 # MCMLE.MCMC.precision from the converged reference fit, read off its saved
 # control with `readRDS("results/r/fit_star.rds")$control$MCMLE.MCMC.precision`.
@@ -66,7 +71,7 @@ def test_the_step_reaches_the_closed_form_maximizer() -> None:
                                target_standardized - standardized.mean(axis=0))
     # Well inside the trust region, so the step is the maximizer and not a
     # rescaling of it.
-    assert np.linalg.norm(expected) < 3.0
+    assert np.linalg.norm(expected) < mcmle.MAX_STANDARDIZED_STEP
 
     stepped = geyer_thompson_step(theta_t, draws, target)
     np.testing.assert_allclose((stepped - theta_t) * scale, expected, atol=1e-8)

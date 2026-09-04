@@ -25,8 +25,17 @@ re-running a 13-minute fit.
 Logs from runs of this implementation, named for what was run rather than
 which script wrote it.
 
-`cd_sweep_before_hull_shrink.log` is kept although it is full of `nan`: it is
-the evidence for a defect where contrastive divergence skipped the convex-hull
-shrink and diverged past about half a sweep per excursion.
+Four of these have no script that can regenerate them, and are kept as
+records rather than as reproducible outputs:
+
+- `cd_sweep_before_hull_shrink.log` is full of `nan` on purpose. It is the
+  evidence for a defect where contrastive divergence skipped the convex-hull
+  shrink and diverged past about half a sweep per excursion.
+- `cd_seeded_vs_mple_seeded.log`, `full_recipe_mple_cd_mcmle.log` and
+  `mcmle_star_from_mple.log` were written by benchmark scripts since deleted.
+  Two of them record a `max_standardized_gap` column that the stopping rule no
+  longer produces, so they could not be reproduced even by rewriting the
+  scripts. They hold the only measurements of MPLE-seeded against CD-seeded
+  MCMLE, and of a full 31-iteration fit from a pseudo-likelihood start.
 
 Regenerating: see [`benchmarks/README.md`](../benchmarks/README.md).

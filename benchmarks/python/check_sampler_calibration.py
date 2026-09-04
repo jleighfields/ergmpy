@@ -15,15 +15,12 @@ from pathlib import Path
 
 import numpy as np
 
-from ergmpy.choice.predict import TERM_NAMES, load
+from ergmpy.choice.predict import PUBLISHED_ESTIMATES, TERM_NAMES, load
 from ergmpy.mcmle import observed_statistics, simulate
 
 ROOT = Path(__file__).resolve().parents[2]
 
-# ergm's published MCMLE estimates for the star model, from the authors'
-# screenshot in reference/Plots/ and reproduced in results/r/.
-PUBLISHED = np.array([-3.0567573, -0.0363712, 1.6013929, 1.2357093,
-                      2.2218421, 1.2257136, 1.1918759, 0.0057696])
+PUBLISHED = np.array(PUBLISHED_ESTIMATES)
 
 
 

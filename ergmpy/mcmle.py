@@ -190,9 +190,9 @@ def simulate(data: ChoiceData, theta: np.ndarray, n_draws: int, burn_in: int,
     return draws, np.vstack([end for _, end in results])
 
 
-#: Bound on how far one step may move, in standardized units. Not a knob: it
-#: exists so a step computed from a sample whose importance weights are badly
-#: skewed cannot throw the fit somewhere it will not recover from.
+# Bound on how far one step may move, in standardized units. Not a knob: it
+# exists so a step computed from a sample whose importance weights are badly
+# skewed cannot throw the fit somewhere it will not recover from.
 MAX_STANDARDIZED_STEP = 3.0
 
 

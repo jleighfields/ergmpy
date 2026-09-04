@@ -10,17 +10,17 @@ from pathlib import Path
 import numpy as np
 
 from ergmpy.choice import mple
-from ergmpy.choice.predict import choice_probabilities, load, top_n_accuracy
+from ergmpy.choice.predict import (
+    PUBLISHED_ESTIMATES,
+    TERM_NAMES,
+    choice_probabilities,
+    load,
+    top_n_accuracy,
+)
 
 ROOT = Path(__file__).resolve().parents[2]
 
-# ergm MCMLE, star model, from the authors' published screenshot (maxit = 200).
-PUBLISHED = {
-    "b2cov.V1": -3.0567573, "b2cov.V2": -0.0363712, "b2cov.V3": 1.6013929,
-    "b2factor.V4.2": 1.2357093, "b2factor.V4.3": 2.2218421,
-    "b2factor.V4.4": 1.2257136, "b2factor.V4.5": 1.1918759,
-    "b2star2": 0.0057696,
-}
+PUBLISHED = dict(zip(TERM_NAMES, PUBLISHED_ESTIMATES, strict=True))
 
 
 def check_hessian(result, data) -> float:
@@ -66,7 +66,7 @@ def main() -> None:
 
         if tag == "train":
             print(f"\n{'term':<16}{'python MPLE':>14}{'ergm MCMLE pub':>16}{'ratio':>9}")
-            for name, est in zip(mple.TERM_NAMES, result.coef, strict=True):
+            for name, est in zip(TERM_NAMES, result.coef, strict=True):
                 pub = PUBLISHED[name]
                 print(f"{name:<16}{est:>14.6f}{pub:>16.7f}{est / pub:>9.3f}")
 

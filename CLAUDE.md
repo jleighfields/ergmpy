@@ -152,12 +152,17 @@ rather than general tie toggling.
 ## Configuration and parameters
 
 - **Estimator settings are keyword arguments with defaults, not globals.**
-  `n_draws`, `burn_in`, `thin`, `tolerance` and `max_iterations` are passed
-  down from the caller. A benchmark that wants lighter sampling passes lighter
-  sampling; it does not edit a module constant.
+  Sampling settings live on `MCMLEControl` and are passed down; a benchmark
+  that wants lighter sampling passes lighter sampling rather than editing a
+  module constant. The exception is a value that is not a setting:
+  `MAX_STANDARDIZED_STEP` bounds how far one step may move so a badly skewed
+  sample cannot throw the fit somewhere it will not recover from. Nobody
+  should be tuning that per run, so it is a constant with its reason beside
+  it rather than a knob.
 - **Never write a value in two places.** A constant that also appears as a
-  literal elsewhere is a defect; the copies will drift. `TERM_NAMES` is
-  duplicated between `mple` and `mcmle` today and should not stay that way.
+  literal elsewhere is a defect; the copies will drift. `TERM_NAMES` lives in
+  `choice/predict.py` and every other module imports it — it was written out
+  in six places before anyone noticed, which is how long that takes.
 - **Record the settings with the measurement.** Anything written to
   `results/` states the sampling settings that produced it. A timing without
   its `n_draws` and `thin` cannot be compared to anything.

@@ -315,9 +315,9 @@ radius:
   check is to read both.
 - **Hardcoded scalar where a named constant exists** — a literal in one
   module that also lives as a named constant in another. Two sources for one
-  value drift apart on the next edit. `TERM_NAMES` in both `mple.py` and
-  `mcmle.py` is the standing instance. Fix: import the one definition and
-  delete the copy.
+  value drift apart on the next edit. The standing instance is `ergm`'s eight
+  published estimates, written out in more than one benchmark script. Fix:
+  import the one definition and delete the copy.
 - **A sampling default written in two places** — `n_draws`, `burn_in`,
   `thin` and `tolerance` are keyword defaults on the estimator that owns
   them. A benchmark script restating one as its own literal is a finding:
@@ -398,9 +398,10 @@ are an ordered hierarchy you walk until one solves the problem.
 - **`updates_python` and `updates_numba` are not two implementations.** Do
   not flag them as duplication; `ergmpy/sampler.py`'s module docstring
   says why.
-- **Estimator settings are keyword arguments, not globals.** A sampling knob
-  read from a module-level constant is a source-of-truth finding. `TERM_NAMES`
-  currently appears in both `mple.py` and `mcmle.py`; that is a real one.
+- **Estimator settings are keyword arguments, not globals**, with the
+  exception `CLAUDE.md` records for values that are not settings. A sampling
+  knob read from a module-level constant is a source-of-truth finding;
+  `MAX_STANDARDIZED_STEP` is not one, and its comment says why.
 - **Benchmarks import from `ergmpy` and define no modeling logic.** A function
   in `benchmarks/` that computes a statistic, a probability or an estimate
   belongs in the package; report it with the module it should move to.
