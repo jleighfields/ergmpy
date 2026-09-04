@@ -185,21 +185,33 @@ exactly one cell), and `marimo run` serves it read-only while
 ### numba, and why the kernel looks the way it does
 
 The Gibbs sweep is sequential, scalar and branchy: each customer's update reads
-the product degrees the previous update just changed. That dependency is why it
-cannot be vectorised — there is no array operation to express "and then the
-next one, given that" — and it is exactly the workload a bytecode interpreter
-handles worst, because the work per operation is tiny and interpreter overhead
-dominates completely.
+the product degrees the previous update just changed. The work per operation is
+tiny, so interpreter overhead dominates completely — which is the workload a
+JIT helps most and vectorisation helps least.
 
-Measured on this data, same source file, the only difference being `@njit`:
+Measured on this data (rounded; repeat runs vary a few percent):
 
-```
-pure Python :  ~80 ms/sweep
-numba       :  ~1.4 ms/sweep     (about 15 M customer updates/s)
-```
+| | ms per sweep |
+|---|---|
+| plain Python | ~80 |
+| NumPy, vectorising a customer's alternatives | ~97 |
+| **numba** | **~1.4** (about 15 M customer updates/s) |
+| NumPy, vectorised across 64 chains | ~2.9 |
+| NumPy, vectorised across 256 chains | ~1.1 |
 
-Repeat runs vary by a few percent, so those are rounded rather than quoted to
-a precision they do not have.
+The second row is the version most people would write first, and it is *slower
+than plain Python*: the arrays are six elements long, so NumPy's per-call
+overhead exceeds what the interpreter was costing. numba beats it by about 70×.
+
+The last two rows matter because the dependency is between customers, not
+between chains — so a batch dimension over chains sidesteps it, and with enough
+chains NumPy overtakes numba. It takes a lot of chains. At the four this
+package runs, matching `ergm`'s `parallel = 4`, vectorising across them is not
+close; break-even is somewhere past a hundred. And 256 chains is not free
+statistically: splitting 1,250 draws that many ways leaves about five per
+chain, far too few for the within-chain batch means the convergence test needs.
+
+So numba is the right tool at this sampling design, not in general.
 
 Two consequences show up in the code. The kernel is written as explicit scalar
 loops rather than vectorised NumPy, which would look like bad Python anywhere
